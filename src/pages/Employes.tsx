@@ -2,15 +2,17 @@ import { Plus, Search, Download, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { employes } from "@/data/mockData";
+import { useEmployes } from "@/hooks/useSupabaseData";
 
 const Employes = () => {
+  const { data: employes, isLoading } = useEmployes();
+
   return (
     <div className="space-y-6">
       <div className="module-header">
         <div>
           <h1 className="page-title">Employés</h1>
-          <p className="text-sm text-muted-foreground mt-1">{employes.length} employés enregistrés</p>
+          <p className="text-sm text-muted-foreground mt-1">{employes?.length ?? 0} employés enregistrés</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm">
@@ -46,7 +48,9 @@ const Employes = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {employes.map((e) => (
+            {isLoading ? (
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">Chargement...</TableCell></TableRow>
+            ) : employes?.map((e) => (
               <TableRow key={e.id} className="cursor-pointer hover:bg-muted/50">
                 <TableCell className="text-muted-foreground">{e.civilite}</TableCell>
                 <TableCell className="font-medium">{e.nom}</TableCell>
@@ -56,7 +60,7 @@ const Employes = () => {
                 <TableCell>
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">{e.contrat}</span>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{new Date(e.dateEmbauche).toLocaleDateString("fr-FR")}</TableCell>
+                <TableCell className="text-muted-foreground">{e.date_embauche ? new Date(e.date_embauche).toLocaleDateString("fr-FR") : "-"}</TableCell>
                 <TableCell>
                   <span className={e.etat === "Actif" ? "badge-active" : "badge-archived"}>{e.etat}</span>
                 </TableCell>

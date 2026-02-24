@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Clock, CheckCircle2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { planningEvents, employes } from "@/data/mockData";
+import { usePlanningEvents, useEmployes } from "@/hooks/useSupabaseData";
 
 const daysOfWeek = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 const weekDates = ["24/02", "25/02", "26/02", "27/02", "28/02", "01/03", "02/03"];
@@ -21,8 +21,10 @@ const statusBg = (statut: string) => {
 
 const Planning = () => {
   const [selectedEmploye, setSelectedEmploye] = useState("LEFEBVRE Sophie");
+  const { data: planningEvents } = usePlanningEvents();
+  const { data: employes } = useEmployes();
 
-  const filteredEvents = planningEvents.filter(e => e.employe === selectedEmploye);
+  const filteredEvents = (planningEvents ?? []).filter(e => e.employe === selectedEmploye);
 
   return (
     <div className="space-y-6">
@@ -38,9 +40,8 @@ const Planning = () => {
         </div>
       </div>
 
-      {/* Employee selector */}
       <div className="flex gap-2 flex-wrap">
-        {employes.map(e => {
+        {(employes ?? []).map(e => {
           const name = `${e.nom} ${e.prenom}`;
           return (
             <button
@@ -58,7 +59,6 @@ const Planning = () => {
         })}
       </div>
 
-      {/* Calendar grid */}
       <div className="data-table-wrapper">
         <div className="grid grid-cols-7 border-b">
           {daysOfWeek.map((day, i) => (
@@ -80,9 +80,9 @@ const Planning = () => {
                       <span className="font-semibold text-foreground uppercase truncate">{ev.beneficiaire.split(" ")[0]}</span>
                     </div>
                     <p className="text-muted-foreground">{ev.debut} - {ev.fin}</p>
-                    {ev.debutReel && (
+                    {ev.debut_reel && (
                       <p className="text-[10px] text-muted-foreground/70">
-                        Réel: {ev.debutReel}{ev.finReelle ? ` - ${ev.finReelle}` : ""}
+                        Réel: {ev.debut_reel}{ev.fin_reelle ? ` - ${ev.fin_reelle}` : ""}
                       </p>
                     )}
                   </div>

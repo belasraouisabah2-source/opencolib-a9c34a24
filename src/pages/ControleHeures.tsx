@@ -1,7 +1,7 @@
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { planningEvents } from "@/data/mockData";
+import { usePlanningEvents } from "@/hooks/useSupabaseData";
 
 const calcDuree = (d: string, f: string) => {
   const [dh, dm] = d.split(":").map(Number);
@@ -20,9 +20,10 @@ const calcEcart = (planifie: string, reel: string) => {
   return `${diff > 0 ? "+" : ""}${diff} min`;
 };
 
-const completed = planningEvents.filter(e => e.statut === "Terminée");
-
 const ControleHeures = () => {
+  const { data: planningEvents, isLoading } = usePlanningEvents();
+  const completed = (planningEvents ?? []).filter(e => e.statut === "Terminée");
+
   return (
     <div className="space-y-6">
       <div className="module-header">
@@ -56,11 +57,13 @@ const ControleHeures = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {completed.map((e) => {
+              {isLoading ? (
+                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground">Chargement...</TableCell></TableRow>
+              ) : completed.map((e) => {
                 const dureePlan = calcDuree(e.debut, e.fin);
-                const dureeReel = e.debutReel && e.finReelle ? calcDuree(e.debutReel, e.finReelle) : "-";
-                const ecartDebut = e.debutReel ? calcEcart(e.debut, e.debutReel) : "-";
-                const hasAnomaly = e.debutReel && Math.abs(parseInt(calcEcart(e.debut, e.debutReel)) || 0) > 10;
+                const dureeReel = e.debut_reel && e.fin_reelle ? calcDuree(e.debut_reel, e.fin_reelle) : "-";
+                const ecartDebut = e.debut_reel ? calcEcart(e.debut, e.debut_reel) : "-";
+                const hasAnomaly = e.debut_reel && Math.abs(parseInt(calcEcart(e.debut, e.debut_reel)) || 0) > 10;
 
                 return (
                   <TableRow key={e.id}>
@@ -69,8 +72,8 @@ const ControleHeures = () => {
                     <TableCell className="bg-muted/20 text-muted-foreground">{e.debut}</TableCell>
                     <TableCell className="bg-muted/20 text-muted-foreground">{e.fin}</TableCell>
                     <TableCell className="bg-muted/20 text-muted-foreground">{dureePlan}</TableCell>
-                    <TableCell>{e.debutReel}</TableCell>
-                    <TableCell>{e.finReelle}</TableCell>
+                    <TableCell>{e.debut_reel}</TableCell>
+                    <TableCell>{e.fin_reelle}</TableCell>
                     <TableCell>{dureeReel}</TableCell>
                     <TableCell className="bg-muted/20">
                       <span className={hasAnomaly ? "text-destructive font-medium" : "text-muted-foreground"}>

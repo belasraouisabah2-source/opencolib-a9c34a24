@@ -2,15 +2,17 @@ import { Plus, Search, Download, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { beneficiaires } from "@/data/mockData";
+import { useBeneficiaires } from "@/hooks/useSupabaseData";
 
 const Beneficiaires = () => {
+  const { data: beneficiaires, isLoading } = useBeneficiaires();
+
   return (
     <div className="space-y-6">
       <div className="module-header">
         <div>
           <h1 className="page-title">Bénéficiaires</h1>
-          <p className="text-sm text-muted-foreground mt-1">{beneficiaires.length} bénéficiaires enregistrés</p>
+          <p className="text-sm text-muted-foreground mt-1">{beneficiaires?.length ?? 0} bénéficiaires enregistrés</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm">
@@ -45,13 +47,15 @@ const Beneficiaires = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {beneficiaires.map((b) => (
+            {isLoading ? (
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Chargement...</TableCell></TableRow>
+            ) : beneficiaires?.map((b) => (
               <TableRow key={b.id} className="cursor-pointer hover:bg-muted/50">
                 <TableCell className="text-muted-foreground">{b.civilite}</TableCell>
                 <TableCell className="font-medium">{b.nom}</TableCell>
                 <TableCell>{b.prenom}</TableCell>
                 <TableCell className="text-muted-foreground">{b.service}</TableCell>
-                <TableCell className="text-muted-foreground">{new Date(b.dateNaissance).toLocaleDateString("fr-FR")}</TableCell>
+                <TableCell className="text-muted-foreground">{b.date_naissance ? new Date(b.date_naissance).toLocaleDateString("fr-FR") : "-"}</TableCell>
                 <TableCell className="text-muted-foreground">{b.telephone}</TableCell>
                 <TableCell>
                   <span className={b.etat === "Actif" ? "badge-active" : "badge-archived"}>{b.etat}</span>

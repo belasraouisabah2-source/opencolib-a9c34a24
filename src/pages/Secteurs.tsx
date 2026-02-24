@@ -2,23 +2,17 @@ import { Plus, Search, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-const secteurs = [
-  { id: "SEC001", nom: "Paris Nord-Est", service: "SAAD Paris Nord", nbEmployes: 8, nbBeneficiaires: 22, etat: "Actif" },
-  { id: "SEC002", nom: "Paris Sud-Ouest", service: "SSIAD Paris Sud", nbEmployes: 6, nbBeneficiaires: 18, etat: "Actif" },
-  { id: "SEC003", nom: "Lyon Presqu'île", service: "SAAD Lyon Centre", nbEmployes: 5, nbBeneficiaires: 15, etat: "Actif" },
-  { id: "SEC004", nom: "Paris Bastille", service: "SAAD Paris Est", nbEmployes: 7, nbBeneficiaires: 20, etat: "Actif" },
-  { id: "SEC005", nom: "Marseille Vieux-Port", service: "SPASAD Marseille", nbEmployes: 4, nbBeneficiaires: 10, etat: "Archivé" },
-  { id: "SEC006", nom: "Paris Montmartre", service: "SAAD Paris Nord", nbEmployes: 6, nbBeneficiaires: 16, etat: "Actif" },
-];
+import { useSecteurs } from "@/hooks/useSupabaseData";
 
 const Secteurs = () => {
+  const { data: secteurs, isLoading } = useSecteurs();
+
   return (
     <div className="space-y-6">
       <div className="module-header">
         <div>
           <h1 className="page-title">Secteurs</h1>
-          <p className="text-sm text-muted-foreground mt-1">{secteurs.length} secteurs configurés</p>
+          <p className="text-sm text-muted-foreground mt-1">{secteurs?.length ?? 0} secteurs configurés</p>
         </div>
         <Button size="sm">
           <Plus className="w-4 h-4 mr-2" />
@@ -46,13 +40,15 @@ const Secteurs = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {secteurs.map((s) => (
+            {isLoading ? (
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Chargement...</TableCell></TableRow>
+            ) : secteurs?.map((s) => (
               <TableRow key={s.id} className="cursor-pointer hover:bg-muted/50">
-                <TableCell className="font-mono text-sm text-muted-foreground">{s.id}</TableCell>
+                <TableCell className="font-mono text-sm text-muted-foreground">{s.code}</TableCell>
                 <TableCell className="font-medium">{s.nom}</TableCell>
                 <TableCell className="text-muted-foreground">{s.service}</TableCell>
-                <TableCell className="text-center">{s.nbEmployes}</TableCell>
-                <TableCell className="text-center">{s.nbBeneficiaires}</TableCell>
+                <TableCell className="text-center">{s.nb_employes}</TableCell>
+                <TableCell className="text-center">{s.nb_beneficiaires}</TableCell>
                 <TableCell>
                   <span className={s.etat === "Actif" ? "badge-active" : "badge-archived"}>{s.etat}</span>
                 </TableCell>
