@@ -64,9 +64,19 @@ export const usePlanningEvents = () =>
     },
   });
 
+export const useFactures = () =>
+  useQuery({
+    queryKey: ["factures"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("factures").select("*").order("code");
+      if (error) throw error;
+      return data;
+    },
+  });
+
 // ── Generic mutation factory ──
 
-type TableName = "clients" | "services" | "secteurs" | "beneficiaires" | "employes" | "planning_events";
+type TableName = "clients" | "services" | "secteurs" | "beneficiaires" | "employes" | "planning_events" | "factures";
 
 function useInsertMutation(table: TableName) {
   const qc = useQueryClient();
@@ -140,3 +150,7 @@ export const useDeleteEmploye = () => useDeleteMutation("employes");
 export const useInsertPlanningEvent = () => useInsertMutation("planning_events");
 export const useUpdatePlanningEvent = () => useUpdateMutation("planning_events");
 export const useDeletePlanningEvent = () => useDeleteMutation("planning_events");
+
+export const useInsertFacture = () => useInsertMutation("factures");
+export const useUpdateFacture = () => useUpdateMutation("factures");
+export const useDeleteFacture = () => useDeleteMutation("factures");
