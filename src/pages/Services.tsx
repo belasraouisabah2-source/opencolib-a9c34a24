@@ -1,31 +1,16 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Search, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useServices, useInsertService, useUpdateService, useDeleteService } from "@/hooks/useSupabaseData";
+import { useServices, useInsertService, useUpdateService, useDeleteService, useClients } from "@/hooks/useSupabaseData";
 import EntityFormDialog, { FieldConfig } from "@/components/crud/EntityFormDialog";
 import DeleteDialog from "@/components/crud/DeleteDialog";
 
-const fields: FieldConfig[] = [
-  { name: "code", label: "Code", required: true, placeholder: "SV006" },
-  { name: "nom", label: "Nom du service", required: true, placeholder: "Nom du service" },
-  { name: "client_nom", label: "Client", required: true, placeholder: "Nom du client" },
-  { name: "type", label: "Type", type: "select", required: true, options: [
-    { label: "SAD", value: "SAD" },
-    { label: "SSIAD", value: "SSIAD" },
-    { label: "SPASAD", value: "SPASAD" },
-  ]},
-  { name: "date_creation", label: "Date de création", type: "date", required: true },
-  { name: "etat", label: "État", type: "select", required: true, options: [
-    { label: "Activé", value: "Activé" },
-    { label: "Archivé", value: "Archivé" },
-  ]},
-];
-
 const Services = () => {
   const { data: services, isLoading } = useServices();
+  const { data: clients } = useClients();
   const insertMutation = useInsertService();
   const updateMutation = useUpdateService();
   const deleteMutation = useDeleteService();
@@ -33,6 +18,22 @@ const Services = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const fields: FieldConfig[] = useMemo(() => [
+    { name: "code", label: "Code", required: true, placeholder: "SV006" },
+    { name: "nom", label: "Nom du service", required: true, placeholder: "Nom du service" },
+    { name: "client_nom", label: "Client", type: "select", required: true, options: (clients ?? []).map(c => ({ label: c.nom, value: c.nom })) },
+    { name: "type", label: "Type", type: "select", required: true, options: [
+      { label: "SAD", value: "SAD" },
+      { label: "SSIAD", value: "SSIAD" },
+      { label: "SPASAD", value: "SPASAD" },
+    ]},
+    { name: "date_creation", label: "Date de création", type: "date", required: true },
+    { name: "etat", label: "État", type: "select", required: true, options: [
+      { label: "Activé", value: "Activé" },
+      { label: "Archivé", value: "Archivé" },
+    ]},
+  ], [clients]);
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
   const openEdit = (item: Record<string, any>) => { setEditItem(item); setFormOpen(true); };

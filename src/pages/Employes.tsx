@@ -1,37 +1,16 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Search, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useEmployes, useInsertEmploye, useUpdateEmploye, useDeleteEmploye } from "@/hooks/useSupabaseData";
+import { useEmployes, useInsertEmploye, useUpdateEmploye, useDeleteEmploye, useServices } from "@/hooks/useSupabaseData";
 import EntityFormDialog, { FieldConfig } from "@/components/crud/EntityFormDialog";
 import DeleteDialog from "@/components/crud/DeleteDialog";
 
-const fields: FieldConfig[] = [
-  { name: "code", label: "Code", required: true, placeholder: "EM006" },
-  { name: "civilite", label: "Civilité", type: "select", options: [
-    { label: "Mme", value: "Mme" },
-    { label: "M.", value: "M." },
-  ]},
-  { name: "nom", label: "Nom", required: true, placeholder: "NOM" },
-  { name: "prenom", label: "Prénom", required: true, placeholder: "Prénom" },
-  { name: "service", label: "Service", placeholder: "Service rattaché" },
-  { name: "poste", label: "Poste", placeholder: "Aide à domicile" },
-  { name: "contrat", label: "Contrat", type: "select", options: [
-    { label: "CDI", value: "CDI" },
-    { label: "CDD", value: "CDD" },
-  ]},
-  { name: "date_embauche", label: "Date d'embauche", type: "date" },
-  { name: "telephone", label: "Téléphone", type: "tel", placeholder: "06 12 34 56 78" },
-  { name: "etat", label: "État", type: "select", required: true, options: [
-    { label: "Actif", value: "Actif" },
-    { label: "Archivé", value: "Archivé" },
-  ]},
-];
-
 const Employes = () => {
   const { data: employes, isLoading } = useEmployes();
+  const { data: services } = useServices();
   const insertMutation = useInsertEmploye();
   const updateMutation = useUpdateEmploye();
   const deleteMutation = useDeleteEmploye();
@@ -39,6 +18,28 @@ const Employes = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const fields: FieldConfig[] = useMemo(() => [
+    { name: "code", label: "Code", required: true, placeholder: "EM006" },
+    { name: "civilite", label: "Civilité", type: "select", options: [
+      { label: "Mme", value: "Mme" },
+      { label: "M.", value: "M." },
+    ]},
+    { name: "nom", label: "Nom", required: true, placeholder: "NOM" },
+    { name: "prenom", label: "Prénom", required: true, placeholder: "Prénom" },
+    { name: "service", label: "Service", type: "select", options: (services ?? []).map(s => ({ label: s.nom, value: s.nom })), placeholder: "Sélectionner un service" },
+    { name: "poste", label: "Poste", placeholder: "Aide à domicile" },
+    { name: "contrat", label: "Contrat", type: "select", options: [
+      { label: "CDI", value: "CDI" },
+      { label: "CDD", value: "CDD" },
+    ]},
+    { name: "date_embauche", label: "Date d'embauche", type: "date" },
+    { name: "telephone", label: "Téléphone", type: "tel", placeholder: "06 12 34 56 78" },
+    { name: "etat", label: "État", type: "select", required: true, options: [
+      { label: "Actif", value: "Actif" },
+      { label: "Archivé", value: "Archivé" },
+    ]},
+  ], [services]);
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
   const openEdit = (item: Record<string, any>) => { setEditItem(item); setFormOpen(true); };
