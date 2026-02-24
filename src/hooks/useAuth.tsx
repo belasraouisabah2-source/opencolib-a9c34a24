@@ -47,28 +47,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
+    let initialSessionHandled = false;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+      if (!mounted) return;
+      
       setSession(newSession);
       setUser(newSession?.user ?? null);
+      
       if (newSession?.user) {
-        await fetchRoles(newSession.user.id);
-        resetSessionTimer();
+        // Use setTimeout to prevent potential deadlock with Supabase client
+        setTimeout(() => {
+          if (mounted) {
+            fetchRoles(newSession.user.id);
+            resetSessionTimer();
+          }
+        }, 0);
       } else {
         setRoles([]);
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
       }
-      setLoading(false);
+      
+      if (!initialSessionHandled) {
+        initialSessionHandled = true;
+        setLoading(false);
+      }
     });
 
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) {
-        fetchRoles(s.user.id);
-        resetSessionTimer();
+    // Fallback: if onAuthStateChange doesn't fire within 3 seconds, force loading to false
+    const fallbackTimer = setTimeout(() => {
+      if (mounted && !initialSessionHandled) {
+        initialSessionHandled = true;
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    }, 3000);
 
     // Activity listener for session timeout reset
     const handleActivity = () => {
@@ -79,6 +92,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     window.addEventListener("keydown", handleActivity);
 
     return () => {
+      mounted = false;
+      clearTimeout(fallbackTimer);
       subscription.unsubscribe();
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       window.removeEventListener("mousemove", handleActivity);
