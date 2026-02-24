@@ -1,11 +1,59 @@
-import { Plus, Search, Download, MoreHorizontal } from "lucide-react";
+import { useState } from "react";
+import { Plus, Search, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useEmployes } from "@/hooks/useSupabaseData";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useEmployes, useInsertEmploye, useUpdateEmploye, useDeleteEmploye } from "@/hooks/useSupabaseData";
+import EntityFormDialog, { FieldConfig } from "@/components/crud/EntityFormDialog";
+import DeleteDialog from "@/components/crud/DeleteDialog";
+
+const fields: FieldConfig[] = [
+  { name: "code", label: "Code", required: true, placeholder: "EM006" },
+  { name: "civilite", label: "Civilité", type: "select", options: [
+    { label: "Mme", value: "Mme" },
+    { label: "M.", value: "M." },
+  ]},
+  { name: "nom", label: "Nom", required: true, placeholder: "NOM" },
+  { name: "prenom", label: "Prénom", required: true, placeholder: "Prénom" },
+  { name: "service", label: "Service", placeholder: "Service rattaché" },
+  { name: "poste", label: "Poste", placeholder: "Aide à domicile" },
+  { name: "contrat", label: "Contrat", type: "select", options: [
+    { label: "CDI", value: "CDI" },
+    { label: "CDD", value: "CDD" },
+  ]},
+  { name: "date_embauche", label: "Date d'embauche", type: "date" },
+  { name: "telephone", label: "Téléphone", type: "tel", placeholder: "06 12 34 56 78" },
+  { name: "etat", label: "État", type: "select", required: true, options: [
+    { label: "Actif", value: "Actif" },
+    { label: "Archivé", value: "Archivé" },
+  ]},
+];
 
 const Employes = () => {
   const { data: employes, isLoading } = useEmployes();
+  const insertMutation = useInsertEmploye();
+  const updateMutation = useUpdateEmploye();
+  const deleteMutation = useDeleteEmploye();
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const openCreate = () => { setEditItem(null); setFormOpen(true); };
+  const openEdit = (item: Record<string, any>) => { setEditItem(item); setFormOpen(true); };
+
+  const handleSubmit = (data: Record<string, string>) => {
+    if (editItem) {
+      updateMutation.mutate({ id: editItem.id, ...data }, { onSuccess: () => setFormOpen(false) });
+    } else {
+      insertMutation.mutate(data, { onSuccess: () => setFormOpen(false) });
+    }
+  };
+
+  const handleDelete = () => {
+    if (deleteId) deleteMutation.mutate(deleteId, { onSuccess: () => setDeleteId(null) });
+  };
 
   return (
     <div className="space-y-6">
@@ -15,14 +63,8 @@ const Employes = () => {
           <p className="text-sm text-muted-foreground mt-1">{employes?.length ?? 0} employés enregistrés</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Exporter
-          </Button>
-          <Button size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            Nouvel employé
-          </Button>
+          <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" />Exporter</Button>
+          <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nouvel employé</Button>
         </div>
       </div>
 
@@ -65,13 +107,33 @@ const Employes = () => {
                   <span className={e.etat === "Actif" ? "badge-active" : "badge-archived"}>{e.etat}</span>
                 </TableCell>
                 <TableCell>
-                  <button className="p-1 rounded hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-1 rounded hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openEdit(e)}><Pencil className="w-4 h-4 mr-2" />Modifier</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDeleteId(e.id)} className="text-destructive"><Trash2 className="w-4 h-4 mr-2" />Supprimer</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      <EntityFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        title={editItem ? "Modifier l'employé" : "Nouvel employé"}
+        fields={fields}
+        defaultValues={editItem ? { code: editItem.code, civilite: editItem.civilite || "", nom: editItem.nom, prenom: editItem.prenom, service: editItem.service || "", poste: editItem.poste || "", contrat: editItem.contrat || "", date_embauche: editItem.date_embauche || "", telephone: editItem.telephone || "", etat: editItem.etat } : { etat: "Actif" }}
+        onSubmit={handleSubmit}
+        loading={insertMutation.isPending || updateMutation.isPending}
+      />
+
+      <DeleteDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)} onConfirm={handleDelete} loading={deleteMutation.isPending} />
     </div>
   );
 };
