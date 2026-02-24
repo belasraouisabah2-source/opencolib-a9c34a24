@@ -1,14 +1,25 @@
-import { Plus, Search, Download, MoreHorizontal } from "lucide-react";
+import { useState } from "react";
+import { Plus, Search, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useFactures, useInsertFacture, useUpdateFacture, useDeleteFacture } from "@/hooks/useSupabaseData";
+import EntityFormDialog, { FieldConfig } from "@/components/crud/EntityFormDialog";
+import DeleteDialog from "@/components/crud/DeleteDialog";
 
-const factures = [
-  { id: "FAC-2026-001", beneficiaire: "DUPONT Marie", periode: "Janvier 2026", montantHT: 1250.00, tva: 250.00, montantTTC: 1500.00, statut: "Payée" },
-  { id: "FAC-2026-002", beneficiaire: "MARTIN Jean", periode: "Janvier 2026", montantHT: 980.00, tva: 196.00, montantTTC: 1176.00, statut: "En attente" },
-  { id: "FAC-2026-003", beneficiaire: "BERNARD Suzanne", periode: "Janvier 2026", montantHT: 1540.00, tva: 308.00, montantTTC: 1848.00, statut: "Payée" },
-  { id: "FAC-2026-004", beneficiaire: "PETIT Robert", periode: "Janvier 2026", montantHT: 720.00, tva: 144.00, montantTTC: 864.00, statut: "Impayée" },
-  { id: "FAC-2026-005", beneficiaire: "DUPONT Marie", periode: "Février 2026", montantHT: 1100.00, tva: 220.00, montantTTC: 1320.00, statut: "En attente" },
+const fields: FieldConfig[] = [
+  { name: "code", label: "N° Facture", required: true, placeholder: "FAC-2026-006" },
+  { name: "beneficiaire", label: "Bénéficiaire", required: true, placeholder: "NOM Prénom" },
+  { name: "periode", label: "Période", required: true, placeholder: "Février 2026" },
+  { name: "montant_ht", label: "Montant HT (€)", required: true, placeholder: "1000.00" },
+  { name: "tva", label: "TVA (€)", required: true, placeholder: "200.00" },
+  { name: "montant_ttc", label: "Montant TTC (€)", required: true, placeholder: "1200.00" },
+  { name: "statut", label: "Statut", type: "select", required: true, options: [
+    { label: "En attente", value: "En attente" },
+    { label: "Payée", value: "Payée" },
+    { label: "Impayée", value: "Impayée" },
+  ]},
 ];
 
 const statusClass = (s: string) => {
@@ -18,22 +29,41 @@ const statusClass = (s: string) => {
 };
 
 const Facturation = () => {
+  const { data: factures, isLoading } = useFactures();
+  const insertMutation = useInsertFacture();
+  const updateMutation = useUpdateFacture();
+  const deleteMutation = useDeleteFacture();
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const openCreate = () => { setEditItem(null); setFormOpen(true); };
+  const openEdit = (item: Record<string, any>) => { setEditItem(item); setFormOpen(true); };
+
+  const handleSubmit = (data: Record<string, string>) => {
+    const payload = { ...data, montant_ht: parseFloat(data.montant_ht) || 0, tva: parseFloat(data.tva) || 0, montant_ttc: parseFloat(data.montant_ttc) || 0 };
+    if (editItem) {
+      updateMutation.mutate({ id: editItem.id, ...payload }, { onSuccess: () => setFormOpen(false) });
+    } else {
+      insertMutation.mutate(payload, { onSuccess: () => setFormOpen(false) });
+    }
+  };
+
+  const handleDelete = () => {
+    if (deleteId) deleteMutation.mutate(deleteId, { onSuccess: () => setDeleteId(null) });
+  };
+
   return (
     <div className="space-y-6">
       <div className="module-header">
         <div>
           <h1 className="page-title">Facturation</h1>
-          <p className="text-sm text-muted-foreground mt-1">{factures.length} factures</p>
+          <p className="text-sm text-muted-foreground mt-1">{factures?.length ?? 0} factures</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Exporter
-          </Button>
-          <Button size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            Nouvelle facture
-          </Button>
+          <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" />Exporter</Button>
+          <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nouvelle facture</Button>
         </div>
       </div>
 
@@ -58,25 +88,47 @@ const Facturation = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {factures.map((f) => (
+            {isLoading ? (
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Chargement...</TableCell></TableRow>
+            ) : factures?.map((f) => (
               <TableRow key={f.id} className="cursor-pointer hover:bg-muted/50">
-                <TableCell className="font-mono text-sm text-muted-foreground">{f.id}</TableCell>
+                <TableCell className="font-mono text-sm text-muted-foreground">{f.code}</TableCell>
                 <TableCell className="font-medium">{f.beneficiaire}</TableCell>
                 <TableCell className="text-muted-foreground">{f.periode}</TableCell>
-                <TableCell className="text-right">{f.montantHT.toFixed(2)} €</TableCell>
-                <TableCell className="text-right text-muted-foreground">{f.tva.toFixed(2)} €</TableCell>
-                <TableCell className="text-right font-medium">{f.montantTTC.toFixed(2)} €</TableCell>
+                <TableCell className="text-right">{Number(f.montant_ht).toFixed(2)} €</TableCell>
+                <TableCell className="text-right text-muted-foreground">{Number(f.tva).toFixed(2)} €</TableCell>
+                <TableCell className="text-right font-medium">{Number(f.montant_ttc).toFixed(2)} €</TableCell>
                 <TableCell>
                   <span className={statusClass(f.statut)}>{f.statut}</span>
                 </TableCell>
                 <TableCell>
-                  <button className="p-1 rounded hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-1 rounded hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openEdit(f)}><Pencil className="w-4 h-4 mr-2" />Modifier</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDeleteId(f.id)} className="text-destructive"><Trash2 className="w-4 h-4 mr-2" />Supprimer</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      <EntityFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        title={editItem ? "Modifier la facture" : "Nouvelle facture"}
+        fields={fields}
+        defaultValues={editItem ? { code: editItem.code, beneficiaire: editItem.beneficiaire, periode: editItem.periode, montant_ht: String(editItem.montant_ht), tva: String(editItem.tva), montant_ttc: String(editItem.montant_ttc), statut: editItem.statut } : { statut: "En attente" }}
+        onSubmit={handleSubmit}
+        loading={insertMutation.isPending || updateMutation.isPending}
+      />
+
+      <DeleteDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)} onConfirm={handleDelete} loading={deleteMutation.isPending} />
     </div>
   );
 };
