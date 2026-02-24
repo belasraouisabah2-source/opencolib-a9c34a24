@@ -2,15 +2,17 @@ import { Plus, Search, Download, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { services } from "@/data/mockData";
+import { useServices } from "@/hooks/useSupabaseData";
 
 const Services = () => {
+  const { data: services, isLoading } = useServices();
+
   return (
     <div className="space-y-6">
       <div className="module-header">
         <div>
           <h1 className="page-title">Services</h1>
-          <p className="text-sm text-muted-foreground mt-1">{services.length} services configurés</p>
+          <p className="text-sm text-muted-foreground mt-1">{services?.length ?? 0} services configurés</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm">
@@ -44,15 +46,17 @@ const Services = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {services.map((s) => (
+            {isLoading ? (
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Chargement...</TableCell></TableRow>
+            ) : services?.map((s) => (
               <TableRow key={s.id} className="cursor-pointer hover:bg-muted/50">
-                <TableCell className="font-mono text-sm text-muted-foreground">{s.id}</TableCell>
+                <TableCell className="font-mono text-sm text-muted-foreground">{s.code}</TableCell>
                 <TableCell className="font-medium">{s.nom}</TableCell>
-                <TableCell className="text-muted-foreground">{s.client}</TableCell>
+                <TableCell className="text-muted-foreground">{s.client_nom}</TableCell>
                 <TableCell>
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">{s.type}</span>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{new Date(s.dateCreation).toLocaleDateString("fr-FR")}</TableCell>
+                <TableCell className="text-muted-foreground">{new Date(s.date_creation).toLocaleDateString("fr-FR")}</TableCell>
                 <TableCell>
                   <span className={s.etat === "Activé" ? "badge-active" : "badge-archived"}>{s.etat}</span>
                 </TableCell>

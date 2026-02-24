@@ -10,7 +10,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react";
-import { dashboardStats, planningEvents } from "@/data/mockData";
+import { useBeneficiaires, useEmployes, usePlanningEvents } from "@/hooks/useSupabaseData";
 import {
   BarChart,
   Bar,
@@ -25,15 +25,6 @@ import {
   LineChart,
   Line,
 } from "recharts";
-
-const stats = [
-  { label: "Bénéficiaires actifs", value: dashboardStats.beneficiairesActifs, icon: Heart, color: "stat-blue", trend: "+3", up: true },
-  { label: "Employés actifs", value: dashboardStats.employesActifs, icon: Users, color: "stat-green", trend: "+1", up: true },
-  { label: "Interventions du jour", value: dashboardStats.interventionsJour, icon: CalendarCheck, color: "stat-orange", trend: "-2", up: false },
-  { label: "Taux d'occupation", value: `${dashboardStats.tauxOccupation}%`, icon: TrendingUp, color: "stat-purple", trend: "+5%", up: true },
-  { label: "Anomalies détectées", value: dashboardStats.anomalies, icon: AlertTriangle, color: "stat-red", trend: "-1", up: true },
-  { label: "CA du mois", value: `${(dashboardStats.chiffreAffairesMois / 1000).toFixed(0)}k€`, icon: Euro, color: "stat-green", trend: "+8%", up: true },
-];
 
 const weeklyHours = [
   { jour: "Lun", planifiees: 52, realisees: 49 },
@@ -69,6 +60,24 @@ const colorMap: Record<string, string> = {
 };
 
 const Dashboard = () => {
+  const { data: beneficiaires } = useBeneficiaires();
+  const { data: employes } = useEmployes();
+  const { data: planningEvents } = usePlanningEvents();
+
+  const beneficiairesActifs = (beneficiaires ?? []).filter(b => b.etat === "Actif").length;
+  const employesActifs = (employes ?? []).filter(e => e.etat === "Actif").length;
+  const todayEvents = (planningEvents ?? []).filter(e => e.date === "2026-02-24");
+  const interventionsJour = todayEvents.length;
+
+  const stats = [
+    { label: "Bénéficiaires actifs", value: beneficiairesActifs, icon: Heart, color: "stat-blue", trend: "+3", up: true },
+    { label: "Employés actifs", value: employesActifs, icon: Users, color: "stat-green", trend: "+1", up: true },
+    { label: "Interventions du jour", value: interventionsJour, icon: CalendarCheck, color: "stat-orange", trend: "-2", up: false },
+    { label: "Taux d'occupation", value: "87%", icon: TrendingUp, color: "stat-purple", trend: "+5%", up: true },
+    { label: "Anomalies détectées", value: 5, icon: AlertTriangle, color: "stat-red", trend: "-1", up: true },
+    { label: "CA du mois", value: "185k€", icon: Euro, color: "stat-green", trend: "+8%", up: true },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="module-header">
@@ -78,7 +87,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {stats.map((stat) => (
           <div key={stat.label} className="stat-card">
@@ -99,9 +107,7 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Weekly hours */}
         <div className="lg:col-span-2 data-table-wrapper p-5">
           <h3 className="font-semibold text-foreground mb-4">Heures planifiées vs réalisées (semaine)</h3>
           <ResponsiveContainer width="100%" height={260}>
@@ -116,7 +122,6 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Service types */}
         <div className="data-table-wrapper p-5">
           <h3 className="font-semibold text-foreground mb-4">Répartition par type</h3>
           <ResponsiveContainer width="100%" height={200}>
@@ -140,7 +145,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Evolution + Recent interventions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="data-table-wrapper p-5">
           <h3 className="font-semibold text-foreground mb-4">Évolution mensuelle</h3>
@@ -158,7 +162,7 @@ const Dashboard = () => {
         <div className="data-table-wrapper p-5">
           <h3 className="font-semibold text-foreground mb-4">Interventions du jour</h3>
           <div className="space-y-3">
-            {planningEvents.filter(e => e.date === "2026-02-24").map((ev) => (
+            {todayEvents.map((ev) => (
               <div key={ev.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
                 <div className={`w-2 h-2 rounded-full shrink-0 ${
                   ev.statut === "Terminée" ? "bg-success" : ev.statut === "En cours" ? "bg-warning" : "bg-info"
