@@ -1,34 +1,17 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Search, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useBeneficiaires, useInsertBeneficiaire, useUpdateBeneficiaire, useDeleteBeneficiaire } from "@/hooks/useSupabaseData";
+import { useBeneficiaires, useInsertBeneficiaire, useUpdateBeneficiaire, useDeleteBeneficiaire, useClients, useServices } from "@/hooks/useSupabaseData";
 import EntityFormDialog, { FieldConfig } from "@/components/crud/EntityFormDialog";
 import DeleteDialog from "@/components/crud/DeleteDialog";
 
-const fields: FieldConfig[] = [
-  { name: "code", label: "Code", required: true, placeholder: "BN006" },
-  { name: "civilite", label: "Civilité", type: "select", options: [
-    { label: "Mme", value: "Mme" },
-    { label: "M.", value: "M." },
-  ]},
-  { name: "nom", label: "Nom", required: true, placeholder: "NOM" },
-  { name: "prenom", label: "Prénom", required: true, placeholder: "Prénom" },
-  { name: "client", label: "Client", placeholder: "Nom du client" },
-  { name: "service", label: "Service", placeholder: "Service rattaché" },
-  { name: "date_naissance", label: "Date de naissance", type: "date" },
-  { name: "adresse", label: "Adresse", placeholder: "Adresse complète" },
-  { name: "telephone", label: "Téléphone", type: "tel", placeholder: "01 23 45 67 89" },
-  { name: "etat", label: "État", type: "select", required: true, options: [
-    { label: "Actif", value: "Actif" },
-    { label: "Archivé", value: "Archivé" },
-  ]},
-];
-
 const Beneficiaires = () => {
   const { data: beneficiaires, isLoading } = useBeneficiaires();
+  const { data: clients } = useClients();
+  const { data: services } = useServices();
   const insertMutation = useInsertBeneficiaire();
   const updateMutation = useUpdateBeneficiaire();
   const deleteMutation = useDeleteBeneficiaire();
@@ -36,6 +19,25 @@ const Beneficiaires = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const fields: FieldConfig[] = useMemo(() => [
+    { name: "code", label: "Code", required: true, placeholder: "BN006" },
+    { name: "civilite", label: "Civilité", type: "select", options: [
+      { label: "Mme", value: "Mme" },
+      { label: "M.", value: "M." },
+    ]},
+    { name: "nom", label: "Nom", required: true, placeholder: "NOM" },
+    { name: "prenom", label: "Prénom", required: true, placeholder: "Prénom" },
+    { name: "client", label: "Client", type: "select", options: (clients ?? []).map(c => ({ label: c.nom, value: c.nom })), placeholder: "Sélectionner un client" },
+    { name: "service", label: "Service", type: "select", options: (services ?? []).map(s => ({ label: s.nom, value: s.nom })), placeholder: "Sélectionner un service" },
+    { name: "date_naissance", label: "Date de naissance", type: "date" },
+    { name: "adresse", label: "Adresse", placeholder: "Adresse complète" },
+    { name: "telephone", label: "Téléphone", type: "tel", placeholder: "01 23 45 67 89" },
+    { name: "etat", label: "État", type: "select", required: true, options: [
+      { label: "Actif", value: "Actif" },
+      { label: "Archivé", value: "Archivé" },
+    ]},
+  ], [clients, services]);
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
   const openEdit = (item: Record<string, any>) => { setEditItem(item); setFormOpen(true); };

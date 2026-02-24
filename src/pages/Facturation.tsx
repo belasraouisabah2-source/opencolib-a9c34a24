@@ -1,26 +1,12 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Search, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useFactures, useInsertFacture, useUpdateFacture, useDeleteFacture } from "@/hooks/useSupabaseData";
+import { useFactures, useInsertFacture, useUpdateFacture, useDeleteFacture, useBeneficiaires } from "@/hooks/useSupabaseData";
 import EntityFormDialog, { FieldConfig } from "@/components/crud/EntityFormDialog";
 import DeleteDialog from "@/components/crud/DeleteDialog";
-
-const fields: FieldConfig[] = [
-  { name: "code", label: "N° Facture", required: true, placeholder: "FAC-2026-006" },
-  { name: "beneficiaire", label: "Bénéficiaire", required: true, placeholder: "NOM Prénom" },
-  { name: "periode", label: "Période", required: true, placeholder: "Février 2026" },
-  { name: "montant_ht", label: "Montant HT (€)", required: true, placeholder: "1000.00" },
-  { name: "tva", label: "TVA (€)", required: true, placeholder: "200.00" },
-  { name: "montant_ttc", label: "Montant TTC (€)", required: true, placeholder: "1200.00" },
-  { name: "statut", label: "Statut", type: "select", required: true, options: [
-    { label: "En attente", value: "En attente" },
-    { label: "Payée", value: "Payée" },
-    { label: "Impayée", value: "Impayée" },
-  ]},
-];
 
 const statusClass = (s: string) => {
   if (s === "Payée") return "badge-active";
@@ -30,6 +16,7 @@ const statusClass = (s: string) => {
 
 const Facturation = () => {
   const { data: factures, isLoading } = useFactures();
+  const { data: beneficiaires } = useBeneficiaires();
   const insertMutation = useInsertFacture();
   const updateMutation = useUpdateFacture();
   const deleteMutation = useDeleteFacture();
@@ -37,6 +24,20 @@ const Facturation = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const fields: FieldConfig[] = useMemo(() => [
+    { name: "code", label: "N° Facture", required: true, placeholder: "FAC-2026-006" },
+    { name: "beneficiaire", label: "Bénéficiaire", type: "select", required: true, options: (beneficiaires ?? []).map(b => ({ label: `${b.nom} ${b.prenom}`, value: `${b.nom} ${b.prenom}` })), placeholder: "Sélectionner un bénéficiaire" },
+    { name: "periode", label: "Période", required: true, placeholder: "Février 2026" },
+    { name: "montant_ht", label: "Montant HT (€)", required: true, placeholder: "1000.00" },
+    { name: "tva", label: "TVA (€)", required: true, placeholder: "200.00" },
+    { name: "montant_ttc", label: "Montant TTC (€)", required: true, placeholder: "1200.00" },
+    { name: "statut", label: "Statut", type: "select", required: true, options: [
+      { label: "En attente", value: "En attente" },
+      { label: "Payée", value: "Payée" },
+      { label: "Impayée", value: "Impayée" },
+    ]},
+  ], [beneficiaires]);
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
   const openEdit = (item: Record<string, any>) => { setEditItem(item); setFormOpen(true); };

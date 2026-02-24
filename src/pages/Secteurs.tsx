@@ -1,27 +1,16 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Search, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useSecteurs, useInsertSecteur, useUpdateSecteur, useDeleteSecteur } from "@/hooks/useSupabaseData";
+import { useSecteurs, useInsertSecteur, useUpdateSecteur, useDeleteSecteur, useServices } from "@/hooks/useSupabaseData";
 import EntityFormDialog, { FieldConfig } from "@/components/crud/EntityFormDialog";
 import DeleteDialog from "@/components/crud/DeleteDialog";
 
-const fields: FieldConfig[] = [
-  { name: "code", label: "Code", required: true, placeholder: "SEC007" },
-  { name: "nom", label: "Nom du secteur", required: true, placeholder: "Nom du secteur" },
-  { name: "service", label: "Service rattaché", placeholder: "SAAD Paris Nord" },
-  { name: "nb_employes", label: "Nombre d'employés", placeholder: "0" },
-  { name: "nb_beneficiaires", label: "Nombre de bénéficiaires", placeholder: "0" },
-  { name: "etat", label: "État", type: "select", required: true, options: [
-    { label: "Actif", value: "Actif" },
-    { label: "Archivé", value: "Archivé" },
-  ]},
-];
-
 const Secteurs = () => {
   const { data: secteurs, isLoading } = useSecteurs();
+  const { data: services } = useServices();
   const insertMutation = useInsertSecteur();
   const updateMutation = useUpdateSecteur();
   const deleteMutation = useDeleteSecteur();
@@ -29,6 +18,18 @@ const Secteurs = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const fields: FieldConfig[] = useMemo(() => [
+    { name: "code", label: "Code", required: true, placeholder: "SEC007" },
+    { name: "nom", label: "Nom du secteur", required: true, placeholder: "Nom du secteur" },
+    { name: "service", label: "Service rattaché", type: "select", options: (services ?? []).map(s => ({ label: s.nom, value: s.nom })), placeholder: "Sélectionner un service" },
+    { name: "nb_employes", label: "Nombre d'employés", placeholder: "0" },
+    { name: "nb_beneficiaires", label: "Nombre de bénéficiaires", placeholder: "0" },
+    { name: "etat", label: "État", type: "select", required: true, options: [
+      { label: "Actif", value: "Actif" },
+      { label: "Archivé", value: "Archivé" },
+    ]},
+  ], [services]);
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
   const openEdit = (item: Record<string, any>) => { setEditItem(item); setFormOpen(true); };
