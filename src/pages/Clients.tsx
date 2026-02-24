@@ -24,9 +24,14 @@ const Clients = () => {
   const updateMutation = useUpdateClient();
   const deleteMutation = useDeleteClient();
 
+  const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const filtered = (clients ?? []).filter(c =>
+    [c.code, c.nom, c.etat].some(v => v?.toLowerCase().includes(search.toLowerCase()))
+  );
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
   const openEdit = (item: Record<string, any>) => { setEditItem(item); setFormOpen(true); };
@@ -50,7 +55,7 @@ const Clients = () => {
       <div className="module-header">
         <div>
           <h1 className="page-title">Clients</h1>
-          <p className="text-sm text-muted-foreground mt-1">{clients?.length ?? 0} clients enregistrés</p>
+          <p className="text-sm text-muted-foreground mt-1">{filtered.length} clients enregistrés</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" />Exporter</Button>
@@ -62,7 +67,7 @@ const Clients = () => {
         <div className="p-4 border-b flex items-center gap-3">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Rechercher un client..." className="pl-9 h-9 bg-secondary border-0" />
+            <Input placeholder="Rechercher un client..." className="pl-9 h-9 bg-secondary border-0" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
         </div>
         <Table>
@@ -78,7 +83,7 @@ const Clients = () => {
           <TableBody>
             {isLoading ? (
               <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Chargement...</TableCell></TableRow>
-            ) : clients?.map((c) => (
+            ) : filtered.map((c) => (
               <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50">
                 <TableCell className="font-mono text-sm text-muted-foreground">{c.code}</TableCell>
                 <TableCell className="font-medium">{c.nom}</TableCell>

@@ -16,9 +16,14 @@ const Beneficiaires = () => {
   const updateMutation = useUpdateBeneficiaire();
   const deleteMutation = useDeleteBeneficiaire();
 
+  const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const filtered = (beneficiaires ?? []).filter(b =>
+    [b.code, b.nom, b.prenom, b.civilite, b.service, b.telephone, b.etat].some(v => v?.toLowerCase().includes(search.toLowerCase()))
+  );
 
   const fields: FieldConfig[] = useMemo(() => [
     { name: "code", label: "Code", required: true, placeholder: "BN006" },
@@ -59,7 +64,7 @@ const Beneficiaires = () => {
       <div className="module-header">
         <div>
           <h1 className="page-title">Bénéficiaires</h1>
-          <p className="text-sm text-muted-foreground mt-1">{beneficiaires?.length ?? 0} bénéficiaires enregistrés</p>
+          <p className="text-sm text-muted-foreground mt-1">{filtered.length} bénéficiaires enregistrés</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" />Exporter</Button>
@@ -71,7 +76,7 @@ const Beneficiaires = () => {
         <div className="p-4 border-b flex items-center gap-3">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Rechercher un bénéficiaire..." className="pl-9 h-9 bg-secondary border-0" />
+            <Input placeholder="Rechercher un bénéficiaire..." className="pl-9 h-9 bg-secondary border-0" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
         </div>
         <Table>
@@ -90,7 +95,7 @@ const Beneficiaires = () => {
           <TableBody>
             {isLoading ? (
               <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Chargement...</TableCell></TableRow>
-            ) : beneficiaires?.map((b) => (
+            ) : filtered.map((b) => (
               <TableRow key={b.id} className="cursor-pointer hover:bg-muted/50">
                 <TableCell className="text-muted-foreground">{b.civilite}</TableCell>
                 <TableCell className="font-medium">{b.nom}</TableCell>
