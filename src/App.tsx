@@ -17,6 +17,7 @@ import ControleHeures from "./pages/ControleHeures";
 import Facturation from "./pages/Facturation";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
+import AdminUsers from "./pages/AdminUsers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/planning" element={<Planning />} />
               <Route path="/controle-heures" element={<ControleHeures />} />
               <Route path="/facturation" element={<Facturation />} />
+              <Route path="/admin/utilisateurs" element={<AdminUsers />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

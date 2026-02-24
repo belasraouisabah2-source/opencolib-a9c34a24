@@ -47,12 +47,24 @@ const menuSections = [
       { to: "/facturation", icon: FileText, label: "Facturation" },
     ],
   },
+  {
+    label: "ADMINISTRATION",
+    items: [
+      { to: "/admin/utilisateurs", icon: Users, label: "Utilisateurs" },
+    ],
+  },
 ];
 
 const Sidebar = () => {
   const [collapsed] = useState<string[]>([]);
   const location = useLocation();
-  const { signOut, user, roles } = useAuth();
+  const { signOut, user, roles, hasRole } = useAuth();
+
+  const visibleSections = menuSections.filter((section) => {
+    if (section.label === "ADMINISTRATION") return hasRole("admin");
+    return true;
+  });
+  
 
   return (
     <aside className="erp-sidebar">
@@ -71,7 +83,7 @@ const Sidebar = () => {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
-        {menuSections.map((section) => {
+        {visibleSections.map((section) => {
           const isCollapsed = collapsed.includes(section.label);
           return (
             <div key={section.label}>
