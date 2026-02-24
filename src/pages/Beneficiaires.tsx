@@ -1,11 +1,56 @@
-import { Plus, Search, Download, MoreHorizontal } from "lucide-react";
+import { useState } from "react";
+import { Plus, Search, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useBeneficiaires } from "@/hooks/useSupabaseData";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useBeneficiaires, useInsertBeneficiaire, useUpdateBeneficiaire, useDeleteBeneficiaire } from "@/hooks/useSupabaseData";
+import EntityFormDialog, { FieldConfig } from "@/components/crud/EntityFormDialog";
+import DeleteDialog from "@/components/crud/DeleteDialog";
+
+const fields: FieldConfig[] = [
+  { name: "code", label: "Code", required: true, placeholder: "BN006" },
+  { name: "civilite", label: "Civilité", type: "select", options: [
+    { label: "Mme", value: "Mme" },
+    { label: "M.", value: "M." },
+  ]},
+  { name: "nom", label: "Nom", required: true, placeholder: "NOM" },
+  { name: "prenom", label: "Prénom", required: true, placeholder: "Prénom" },
+  { name: "client", label: "Client", placeholder: "Nom du client" },
+  { name: "service", label: "Service", placeholder: "Service rattaché" },
+  { name: "date_naissance", label: "Date de naissance", type: "date" },
+  { name: "adresse", label: "Adresse", placeholder: "Adresse complète" },
+  { name: "telephone", label: "Téléphone", type: "tel", placeholder: "01 23 45 67 89" },
+  { name: "etat", label: "État", type: "select", required: true, options: [
+    { label: "Actif", value: "Actif" },
+    { label: "Archivé", value: "Archivé" },
+  ]},
+];
 
 const Beneficiaires = () => {
   const { data: beneficiaires, isLoading } = useBeneficiaires();
+  const insertMutation = useInsertBeneficiaire();
+  const updateMutation = useUpdateBeneficiaire();
+  const deleteMutation = useDeleteBeneficiaire();
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const openCreate = () => { setEditItem(null); setFormOpen(true); };
+  const openEdit = (item: Record<string, any>) => { setEditItem(item); setFormOpen(true); };
+
+  const handleSubmit = (data: Record<string, string>) => {
+    if (editItem) {
+      updateMutation.mutate({ id: editItem.id, ...data }, { onSuccess: () => setFormOpen(false) });
+    } else {
+      insertMutation.mutate(data, { onSuccess: () => setFormOpen(false) });
+    }
+  };
+
+  const handleDelete = () => {
+    if (deleteId) deleteMutation.mutate(deleteId, { onSuccess: () => setDeleteId(null) });
+  };
 
   return (
     <div className="space-y-6">
@@ -15,14 +60,8 @@ const Beneficiaires = () => {
           <p className="text-sm text-muted-foreground mt-1">{beneficiaires?.length ?? 0} bénéficiaires enregistrés</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Exporter
-          </Button>
-          <Button size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            Nouveau bénéficiaire
-          </Button>
+          <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" />Exporter</Button>
+          <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nouveau bénéficiaire</Button>
         </div>
       </div>
 
@@ -61,13 +100,33 @@ const Beneficiaires = () => {
                   <span className={b.etat === "Actif" ? "badge-active" : "badge-archived"}>{b.etat}</span>
                 </TableCell>
                 <TableCell>
-                  <button className="p-1 rounded hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-1 rounded hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openEdit(b)}><Pencil className="w-4 h-4 mr-2" />Modifier</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDeleteId(b.id)} className="text-destructive"><Trash2 className="w-4 h-4 mr-2" />Supprimer</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      <EntityFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        title={editItem ? "Modifier le bénéficiaire" : "Nouveau bénéficiaire"}
+        fields={fields}
+        defaultValues={editItem ? { code: editItem.code, civilite: editItem.civilite || "", nom: editItem.nom, prenom: editItem.prenom, client: editItem.client || "", service: editItem.service || "", date_naissance: editItem.date_naissance || "", adresse: editItem.adresse || "", telephone: editItem.telephone || "", etat: editItem.etat } : { etat: "Actif" }}
+        onSubmit={handleSubmit}
+        loading={insertMutation.isPending || updateMutation.isPending}
+      />
+
+      <DeleteDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)} onConfirm={handleDelete} loading={deleteMutation.isPending} />
     </div>
   );
 };

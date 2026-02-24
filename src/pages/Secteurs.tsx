@@ -1,11 +1,50 @@
-import { Plus, Search, MoreHorizontal } from "lucide-react";
+import { useState } from "react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useSecteurs } from "@/hooks/useSupabaseData";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useSecteurs, useInsertSecteur, useUpdateSecteur, useDeleteSecteur } from "@/hooks/useSupabaseData";
+import EntityFormDialog, { FieldConfig } from "@/components/crud/EntityFormDialog";
+import DeleteDialog from "@/components/crud/DeleteDialog";
+
+const fields: FieldConfig[] = [
+  { name: "code", label: "Code", required: true, placeholder: "SEC007" },
+  { name: "nom", label: "Nom du secteur", required: true, placeholder: "Nom du secteur" },
+  { name: "service", label: "Service rattaché", placeholder: "SAAD Paris Nord" },
+  { name: "nb_employes", label: "Nombre d'employés", placeholder: "0" },
+  { name: "nb_beneficiaires", label: "Nombre de bénéficiaires", placeholder: "0" },
+  { name: "etat", label: "État", type: "select", required: true, options: [
+    { label: "Actif", value: "Actif" },
+    { label: "Archivé", value: "Archivé" },
+  ]},
+];
 
 const Secteurs = () => {
   const { data: secteurs, isLoading } = useSecteurs();
+  const insertMutation = useInsertSecteur();
+  const updateMutation = useUpdateSecteur();
+  const deleteMutation = useDeleteSecteur();
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const openCreate = () => { setEditItem(null); setFormOpen(true); };
+  const openEdit = (item: Record<string, any>) => { setEditItem(item); setFormOpen(true); };
+
+  const handleSubmit = (data: Record<string, string>) => {
+    const payload = { ...data, nb_employes: parseInt(data.nb_employes) || 0, nb_beneficiaires: parseInt(data.nb_beneficiaires) || 0 };
+    if (editItem) {
+      updateMutation.mutate({ id: editItem.id, ...payload }, { onSuccess: () => setFormOpen(false) });
+    } else {
+      insertMutation.mutate(payload, { onSuccess: () => setFormOpen(false) });
+    }
+  };
+
+  const handleDelete = () => {
+    if (deleteId) deleteMutation.mutate(deleteId, { onSuccess: () => setDeleteId(null) });
+  };
 
   return (
     <div className="space-y-6">
@@ -14,10 +53,7 @@ const Secteurs = () => {
           <h1 className="page-title">Secteurs</h1>
           <p className="text-sm text-muted-foreground mt-1">{secteurs?.length ?? 0} secteurs configurés</p>
         </div>
-        <Button size="sm">
-          <Plus className="w-4 h-4 mr-2" />
-          Nouveau secteur
-        </Button>
+        <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nouveau secteur</Button>
       </div>
 
       <div className="data-table-wrapper">
@@ -53,13 +89,33 @@ const Secteurs = () => {
                   <span className={s.etat === "Actif" ? "badge-active" : "badge-archived"}>{s.etat}</span>
                 </TableCell>
                 <TableCell>
-                  <button className="p-1 rounded hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-1 rounded hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openEdit(s)}><Pencil className="w-4 h-4 mr-2" />Modifier</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDeleteId(s.id)} className="text-destructive"><Trash2 className="w-4 h-4 mr-2" />Supprimer</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      <EntityFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        title={editItem ? "Modifier le secteur" : "Nouveau secteur"}
+        fields={fields}
+        defaultValues={editItem ? { code: editItem.code, nom: editItem.nom, service: editItem.service || "", nb_employes: String(editItem.nb_employes), nb_beneficiaires: String(editItem.nb_beneficiaires), etat: editItem.etat } : { etat: "Actif", nb_employes: "0", nb_beneficiaires: "0" }}
+        onSubmit={handleSubmit}
+        loading={insertMutation.isPending || updateMutation.isPending}
+      />
+
+      <DeleteDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)} onConfirm={handleDelete} loading={deleteMutation.isPending} />
     </div>
   );
 };

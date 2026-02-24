@@ -1,11 +1,49 @@
-import { Plus, Search, Download, MoreHorizontal } from "lucide-react";
+import { useState } from "react";
+import { Plus, Search, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useClients } from "@/hooks/useSupabaseData";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useClients, useInsertClient, useUpdateClient, useDeleteClient } from "@/hooks/useSupabaseData";
+import EntityFormDialog, { FieldConfig } from "@/components/crud/EntityFormDialog";
+import DeleteDialog from "@/components/crud/DeleteDialog";
+
+const fields: FieldConfig[] = [
+  { name: "code", label: "Code", required: true, placeholder: "CL006" },
+  { name: "nom", label: "Nom du client", required: true, placeholder: "Nom de l'organisme" },
+  { name: "date_creation", label: "Date de création", type: "date", required: true },
+  { name: "etat", label: "État", type: "select", required: true, options: [
+    { label: "Actif", value: "Actif" },
+    { label: "Archivé", value: "Archivé" },
+  ]},
+];
 
 const Clients = () => {
   const { data: clients, isLoading } = useClients();
+  const insertMutation = useInsertClient();
+  const updateMutation = useUpdateClient();
+  const deleteMutation = useDeleteClient();
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const openCreate = () => { setEditItem(null); setFormOpen(true); };
+  const openEdit = (item: Record<string, any>) => { setEditItem(item); setFormOpen(true); };
+
+  const handleSubmit = (data: Record<string, string>) => {
+    if (editItem) {
+      updateMutation.mutate({ id: editItem.id, ...data }, { onSuccess: () => setFormOpen(false) });
+    } else {
+      insertMutation.mutate(data, { onSuccess: () => setFormOpen(false) });
+    }
+  };
+
+  const handleDelete = () => {
+    if (deleteId) {
+      deleteMutation.mutate(deleteId, { onSuccess: () => setDeleteId(null) });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -15,14 +53,8 @@ const Clients = () => {
           <p className="text-sm text-muted-foreground mt-1">{clients?.length ?? 0} clients enregistrés</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Exporter
-          </Button>
-          <Button size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            Nouveau client
-          </Button>
+          <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" />Exporter</Button>
+          <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nouveau client</Button>
         </div>
       </div>
 
@@ -55,15 +87,38 @@ const Clients = () => {
                   <span className={c.etat === "Actif" ? "badge-active" : "badge-archived"}>{c.etat}</span>
                 </TableCell>
                 <TableCell>
-                  <button className="p-1 rounded hover:bg-muted">
-                    <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-1 rounded hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openEdit(c)}><Pencil className="w-4 h-4 mr-2" />Modifier</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDeleteId(c.id)} className="text-destructive"><Trash2 className="w-4 h-4 mr-2" />Supprimer</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      <EntityFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        title={editItem ? "Modifier le client" : "Nouveau client"}
+        fields={fields}
+        defaultValues={editItem ? { code: editItem.code, nom: editItem.nom, date_creation: editItem.date_creation, etat: editItem.etat } : { etat: "Actif" }}
+        onSubmit={handleSubmit}
+        loading={insertMutation.isPending || updateMutation.isPending}
+      />
+
+      <DeleteDialog
+        open={!!deleteId}
+        onOpenChange={(o) => !o && setDeleteId(null)}
+        onConfirm={handleDelete}
+        loading={deleteMutation.isPending}
+      />
     </div>
   );
 };
