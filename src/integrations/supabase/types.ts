@@ -14,44 +14,206 @@ export type Database = {
   }
   public: {
     Tables: {
+      beneficiaire_absences: {
+        Row: {
+          beneficiaire_id: string
+          commentaire: string | null
+          created_at: string
+          date_debut: string
+          date_fin: string
+          id: string
+          motif: string
+        }
+        Insert: {
+          beneficiaire_id: string
+          commentaire?: string | null
+          created_at?: string
+          date_debut: string
+          date_fin: string
+          id?: string
+          motif?: string
+        }
+        Update: {
+          beneficiaire_id?: string
+          commentaire?: string | null
+          created_at?: string
+          date_debut?: string
+          date_fin?: string
+          id?: string
+          motif?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beneficiaire_absences_beneficiaire_id_fkey"
+            columns: ["beneficiaire_id"]
+            isOneToOne: false
+            referencedRelation: "beneficiaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      beneficiaire_entourage: {
+        Row: {
+          adresse: string | null
+          beneficiaire_id: string
+          created_at: string
+          email: string | null
+          id: string
+          lien_parente: string | null
+          nom: string
+          personne_confiance: boolean
+          personne_urgence: boolean
+          prenom: string
+          telephone_fixe: string | null
+          telephone_mobile: string | null
+        }
+        Insert: {
+          adresse?: string | null
+          beneficiaire_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          lien_parente?: string | null
+          nom: string
+          personne_confiance?: boolean
+          personne_urgence?: boolean
+          prenom: string
+          telephone_fixe?: string | null
+          telephone_mobile?: string | null
+        }
+        Update: {
+          adresse?: string | null
+          beneficiaire_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          lien_parente?: string | null
+          nom?: string
+          personne_confiance?: boolean
+          personne_urgence?: boolean
+          prenom?: string
+          telephone_fixe?: string | null
+          telephone_mobile?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beneficiaire_entourage_beneficiaire_id_fkey"
+            columns: ["beneficiaire_id"]
+            isOneToOne: false
+            referencedRelation: "beneficiaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      beneficiaire_prises_en_charge: {
+        Row: {
+          beneficiaire_id: string
+          created_at: string
+          date_debut: string
+          date_fin: string | null
+          heures_dimanches_feries: number
+          heures_normales: number
+          id: string
+          nb_heures: number
+          nb_heures_restant: number
+          organisme: string | null
+          service: string | null
+        }
+        Insert: {
+          beneficiaire_id: string
+          created_at?: string
+          date_debut: string
+          date_fin?: string | null
+          heures_dimanches_feries?: number
+          heures_normales?: number
+          id?: string
+          nb_heures?: number
+          nb_heures_restant?: number
+          organisme?: string | null
+          service?: string | null
+        }
+        Update: {
+          beneficiaire_id?: string
+          created_at?: string
+          date_debut?: string
+          date_fin?: string | null
+          heures_dimanches_feries?: number
+          heures_normales?: number
+          id?: string
+          nb_heures?: number
+          nb_heures_restant?: number
+          organisme?: string | null
+          service?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beneficiaire_prises_en_charge_beneficiaire_id_fkey"
+            columns: ["beneficiaire_id"]
+            isOneToOne: false
+            referencedRelation: "beneficiaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       beneficiaires: {
         Row: {
           adresse: string | null
+          allergies: string | null
           civilite: string | null
           client: string | null
           code: string
           date_naissance: string | null
           etat: string
+          gir: string | null
           id: string
+          medecin_traitant: string | null
           nom: string
+          numero_ss: string | null
+          pathologies: string | null
           prenom: string
+          secteur: string | null
           service: string | null
+          situation_familiale: string | null
           telephone: string | null
         }
         Insert: {
           adresse?: string | null
+          allergies?: string | null
           civilite?: string | null
           client?: string | null
           code: string
           date_naissance?: string | null
           etat?: string
+          gir?: string | null
           id?: string
+          medecin_traitant?: string | null
           nom: string
+          numero_ss?: string | null
+          pathologies?: string | null
           prenom: string
+          secteur?: string | null
           service?: string | null
+          situation_familiale?: string | null
           telephone?: string | null
         }
         Update: {
           adresse?: string | null
+          allergies?: string | null
           civilite?: string | null
           client?: string | null
           code?: string
           date_naissance?: string | null
           etat?: string
+          gir?: string | null
           id?: string
+          medecin_traitant?: string | null
           nom?: string
+          numero_ss?: string | null
+          pathologies?: string | null
           prenom?: string
+          secteur?: string | null
           service?: string | null
+          situation_familiale?: string | null
           telephone?: string | null
         }
         Relationships: []

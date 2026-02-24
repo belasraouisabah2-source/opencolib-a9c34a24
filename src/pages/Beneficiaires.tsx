@@ -1,17 +1,19 @@
 import { useState, useMemo } from "react";
-import { Plus, Search, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Download, MoreHorizontal, Pencil, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useBeneficiaires, useInsertBeneficiaire, useUpdateBeneficiaire, useDeleteBeneficiaire, useClients, useServices } from "@/hooks/useSupabaseData";
+import { useBeneficiaires, useInsertBeneficiaire, useUpdateBeneficiaire, useDeleteBeneficiaire, useClients, useServices, useSecteurs } from "@/hooks/useSupabaseData";
 import EntityFormDialog, { FieldConfig } from "@/components/crud/EntityFormDialog";
 import DeleteDialog from "@/components/crud/DeleteDialog";
+import BeneficiaireDetailDialog from "@/components/beneficiaires/BeneficiaireDetailDialog";
 
 const Beneficiaires = () => {
   const { data: beneficiaires, isLoading } = useBeneficiaires();
   const { data: clients } = useClients();
   const { data: services } = useServices();
+  const { data: secteurs } = useSecteurs();
   const insertMutation = useInsertBeneficiaire();
   const updateMutation = useUpdateBeneficiaire();
   const deleteMutation = useDeleteBeneficiaire();
@@ -20,9 +22,10 @@ const Beneficiaires = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [detailItem, setDetailItem] = useState<Record<string, any> | null>(null);
 
   const filtered = (beneficiaires ?? []).filter(b =>
-    [b.code, b.nom, b.prenom, b.civilite, b.service, b.telephone, b.etat].some(v => v?.toLowerCase().includes(search.toLowerCase()))
+    [b.code, b.nom, b.prenom, b.civilite, b.service, b.telephone, b.etat, b.client, (b as any).secteur].some(v => v?.toLowerCase().includes(search.toLowerCase()))
   );
 
   const fields: FieldConfig[] = useMemo(() => [
@@ -35,6 +38,7 @@ const Beneficiaires = () => {
     { name: "prenom", label: "Prénom", required: true, placeholder: "Prénom" },
     { name: "client", label: "Client", type: "select", options: (clients ?? []).map(c => ({ label: c.nom, value: c.nom })), placeholder: "Sélectionner un client" },
     { name: "service", label: "Service", type: "select", options: (services ?? []).map(s => ({ label: s.nom, value: s.nom })), placeholder: "Sélectionner un service" },
+    { name: "secteur", label: "Secteur", type: "select", options: (secteurs ?? []).map(s => ({ label: s.nom, value: s.nom })), placeholder: "Sélectionner un secteur (optionnel)" },
     { name: "date_naissance", label: "Date de naissance", type: "date" },
     { name: "adresse", label: "Adresse", placeholder: "Adresse complète" },
     { name: "telephone", label: "Téléphone", type: "tel", placeholder: "01 23 45 67 89" },
@@ -42,7 +46,7 @@ const Beneficiaires = () => {
       { label: "Actif", value: "Actif" },
       { label: "Archivé", value: "Archivé" },
     ]},
-  ], [clients, services]);
+  ], [clients, services, secteurs]);
 
   const openCreate = () => { setEditItem(null); setFormOpen(true); };
   const openEdit = (item: Record<string, any>) => { setEditItem(item); setFormOpen(true); };
@@ -57,6 +61,15 @@ const Beneficiaires = () => {
 
   const handleDelete = () => {
     if (deleteId) deleteMutation.mutate(deleteId, { onSuccess: () => setDeleteId(null) });
+  };
+
+  const handleDetailUpdate = (data: Record<string, any>) => {
+    updateMutation.mutate(data as any, {
+      onSuccess: () => {
+        // Update the detail item with new data
+        setDetailItem(prev => prev ? { ...prev, ...data } : null);
+      }
+    });
   };
 
   return (
@@ -85,8 +98,11 @@ const Beneficiaires = () => {
               <TableHead>Civilité</TableHead>
               <TableHead>Nom</TableHead>
               <TableHead>Prénom</TableHead>
+              <TableHead>Client</TableHead>
               <TableHead>Service</TableHead>
+              <TableHead>Secteur</TableHead>
               <TableHead>Date de naissance</TableHead>
+              <TableHead>Adresse</TableHead>
               <TableHead>Téléphone</TableHead>
               <TableHead>État</TableHead>
               <TableHead className="w-12"></TableHead>
@@ -94,24 +110,28 @@ const Beneficiaires = () => {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Chargement...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground">Chargement...</TableCell></TableRow>
             ) : filtered.map((b) => (
-              <TableRow key={b.id} className="cursor-pointer hover:bg-muted/50">
+              <TableRow key={b.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDetailItem(b)}>
                 <TableCell className="text-muted-foreground">{b.civilite}</TableCell>
                 <TableCell className="font-medium">{b.nom}</TableCell>
                 <TableCell>{b.prenom}</TableCell>
-                <TableCell className="text-muted-foreground">{b.service}</TableCell>
+                <TableCell className="text-muted-foreground">{b.client || "-"}</TableCell>
+                <TableCell className="text-muted-foreground">{b.service || "-"}</TableCell>
+                <TableCell className="text-muted-foreground">{(b as any).secteur || "-"}</TableCell>
                 <TableCell className="text-muted-foreground">{b.date_naissance ? new Date(b.date_naissance).toLocaleDateString("fr-FR") : "-"}</TableCell>
-                <TableCell className="text-muted-foreground">{b.telephone}</TableCell>
+                <TableCell className="text-muted-foreground text-xs max-w-[150px] truncate">{b.adresse || "-"}</TableCell>
+                <TableCell className="text-muted-foreground">{b.telephone || "-"}</TableCell>
                 <TableCell>
                   <span className={b.etat === "Actif" ? "badge-active" : "badge-archived"}>{b.etat}</span>
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="p-1 rounded hover:bg-muted"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                      <button className="p-1 rounded hover:bg-muted" onClick={e => e.stopPropagation()}><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setDetailItem(b)}><Eye className="w-4 h-4 mr-2" />Voir la fiche</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openEdit(b)}><Pencil className="w-4 h-4 mr-2" />Modifier</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setDeleteId(b.id)} className="text-destructive"><Trash2 className="w-4 h-4 mr-2" />Supprimer</DropdownMenuItem>
                     </DropdownMenuContent>
@@ -128,9 +148,21 @@ const Beneficiaires = () => {
         onOpenChange={setFormOpen}
         title={editItem ? "Modifier le bénéficiaire" : "Nouveau bénéficiaire"}
         fields={fields}
-        defaultValues={editItem ? { code: editItem.code, civilite: editItem.civilite || "", nom: editItem.nom, prenom: editItem.prenom, client: editItem.client || "", service: editItem.service || "", date_naissance: editItem.date_naissance || "", adresse: editItem.adresse || "", telephone: editItem.telephone || "", etat: editItem.etat } : { etat: "Actif" }}
+        defaultValues={editItem ? {
+          code: editItem.code, civilite: editItem.civilite || "", nom: editItem.nom, prenom: editItem.prenom,
+          client: editItem.client || "", service: editItem.service || "", secteur: (editItem as any).secteur || "",
+          date_naissance: editItem.date_naissance || "", adresse: editItem.adresse || "",
+          telephone: editItem.telephone || "", etat: editItem.etat
+        } : { etat: "Actif" }}
         onSubmit={handleSubmit}
         loading={insertMutation.isPending || updateMutation.isPending}
+      />
+
+      <BeneficiaireDetailDialog
+        open={!!detailItem}
+        onOpenChange={o => !o && setDetailItem(null)}
+        beneficiaire={detailItem}
+        onUpdate={handleDetailUpdate}
       />
 
       <DeleteDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)} onConfirm={handleDelete} loading={deleteMutation.isPending} />
