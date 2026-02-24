@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, DragEvent } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -7,9 +7,9 @@ import {
   Play,
   X,
   CalendarDays,
+  GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { usePlanningEvents, useEmployes, useServices, useSecteurs } from "@/hooks/useSupabaseData";
+import { usePlanningEvents, useUpdatePlanningEvent, useEmployes, useServices, useSecteurs } from "@/hooks/useSupabaseData";
 import { addDays, startOfWeek, format, getISOWeek, parseISO, differenceInMinutes, parse } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -57,11 +57,46 @@ const Planning = () => {
   const [secteurFilter, setSecteurFilter] = useState<string>("all");
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
 
   const { data: planningEvents } = usePlanningEvents();
   const { data: employes } = useEmployes();
   const { data: services } = useServices();
   const { data: secteurs } = useSecteurs();
+  const updateEvent = useUpdatePlanningEvent();
+
+  // ── drag & drop handlers ──
+  const handleDragStart = useCallback((e: DragEvent<HTMLDivElement>, ev: any) => {
+    if (ev.statut !== "Planifiée") {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.setData("text/plain", ev.id);
+    e.dataTransfer.effectAllowed = "move";
+  }, []);
+
+  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>, dateKey: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverDate(dateKey);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverDate(null);
+  }, []);
+
+  const handleDrop = useCallback((e: DragEvent<HTMLDivElement>, dateKey: string) => {
+    e.preventDefault();
+    setDragOverDate(null);
+    const eventId = e.dataTransfer.getData("text/plain");
+    if (!eventId) return;
+    const ev = (planningEvents ?? []).find(x => x.id === eventId);
+    if (!ev || ev.statut !== "Planifiée" || ev.date === dateKey) return;
+    updateEvent.mutate({ id: eventId, date: dateKey } as any);
+    if (selectedEvent?.id === eventId) {
+      setSelectedEvent({ ...selectedEvent, date: dateKey });
+    }
+  }, [planningEvents, updateEvent, selectedEvent]);
 
   // ── filtered employees ──
   const filteredEmployes = useMemo(() => {
@@ -238,44 +273,53 @@ const Planning = () => {
                   );
                 })}
               </div>
-              {/* Events grid */}
               <div className="grid grid-cols-7 min-h-[120px]">
                 {week.days.map((day, i) => {
                   const dateKey = format(day, "yyyy-MM-dd");
                   const dayEvents = filteredEvents.filter(e => e.date === dateKey);
                   const isWeekend = i >= 5;
+                  const isDragOver = dragOverDate === dateKey;
                   return (
                     <div
                       key={dateKey}
-                      className={`p-1.5 border-r last:border-r-0 border-b space-y-1 ${isWeekend ? "bg-muted/20" : ""}`}
+                      onDragOver={(e) => handleDragOver(e, dateKey)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, dateKey)}
+                      className={`p-1.5 border-r last:border-r-0 border-b space-y-1 transition-colors ${isWeekend ? "bg-muted/20" : ""} ${isDragOver ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : ""}`}
                     >
-                      {dayEvents.map(ev => (
-                        <div
-                          key={ev.id}
-                          onClick={() => handleEventClick(ev)}
-                          className={`p-1.5 rounded-lg border text-xs space-y-0.5 cursor-pointer hover:shadow-sm transition-shadow ${statusBg(ev.statut)} ${selectedEvent?.id === ev.id ? "ring-2 ring-primary" : ""}`}
-                        >
-                          <div className="flex items-center gap-1">
-                            {statusIcon(ev.statut)}
-                            <span className="font-semibold text-foreground uppercase truncate">
-                              {ev.beneficiaire.split(" ")[0]}
-                            </span>
+                      {dayEvents.map(ev => {
+                        const isDraggable = ev.statut === "Planifiée";
+                        return (
+                          <div
+                            key={ev.id}
+                            draggable={isDraggable}
+                            onDragStart={(e) => handleDragStart(e, ev)}
+                            onClick={() => handleEventClick(ev)}
+                            className={`p-1.5 rounded-lg border text-xs space-y-0.5 transition-shadow ${statusBg(ev.statut)} ${selectedEvent?.id === ev.id ? "ring-2 ring-primary" : ""} ${isDraggable ? "cursor-grab active:cursor-grabbing hover:shadow-md" : "cursor-pointer hover:shadow-sm"}`}
+                          >
+                            <div className="flex items-center gap-1">
+                              {isDraggable && <GripVertical className="w-3 h-3 text-muted-foreground/50 shrink-0" />}
+                              {statusIcon(ev.statut)}
+                              <span className="font-semibold text-foreground uppercase truncate">
+                                {ev.beneficiaire.split(" ")[0]}
+                              </span>
+                            </div>
+                            <p className="text-muted-foreground">
+                              {fmtTime(ev.debut)} - {fmtTime(ev.fin)}
+                            </p>
+                            {ev.statut === "En cours" && ev.debut_reel && (
+                              <p className="text-[10px] text-muted-foreground/70">
+                                Début réel: {fmtTime(ev.debut_reel)}
+                              </p>
+                            )}
+                            {ev.statut === "Terminée" && ev.debut_reel && (
+                              <p className="text-[10px] text-muted-foreground/70">
+                                Réel: {fmtTime(ev.debut_reel)}{ev.fin_reelle ? ` - ${fmtTime(ev.fin_reelle)}` : ""}
+                              </p>
+                            )}
                           </div>
-                          <p className="text-muted-foreground">
-                            {fmtTime(ev.debut)} - {fmtTime(ev.fin)}
-                          </p>
-                          {ev.statut === "En cours" && ev.debut_reel && (
-                            <p className="text-[10px] text-muted-foreground/70">
-                              Début réel: {fmtTime(ev.debut_reel)}
-                            </p>
-                          )}
-                          {ev.statut === "Terminée" && ev.debut_reel && (
-                            <p className="text-[10px] text-muted-foreground/70">
-                              Réel: {fmtTime(ev.debut_reel)}{ev.fin_reelle ? ` - ${fmtTime(ev.fin_reelle)}` : ""}
-                            </p>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   );
                 })}
