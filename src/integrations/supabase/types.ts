@@ -14,7 +14,224 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      beneficiaires: {
+        Row: {
+          adresse: string | null
+          civilite: string | null
+          client: string | null
+          code: string
+          date_naissance: string | null
+          etat: string
+          id: string
+          nom: string
+          prenom: string
+          service: string | null
+          telephone: string | null
+        }
+        Insert: {
+          adresse?: string | null
+          civilite?: string | null
+          client?: string | null
+          code: string
+          date_naissance?: string | null
+          etat?: string
+          id?: string
+          nom: string
+          prenom: string
+          service?: string | null
+          telephone?: string | null
+        }
+        Update: {
+          adresse?: string | null
+          civilite?: string | null
+          client?: string | null
+          code?: string
+          date_naissance?: string | null
+          etat?: string
+          id?: string
+          nom?: string
+          prenom?: string
+          service?: string | null
+          telephone?: string | null
+        }
+        Relationships: []
+      }
+      clients: {
+        Row: {
+          code: string
+          date_creation: string
+          etat: string
+          id: string
+          nom: string
+        }
+        Insert: {
+          code: string
+          date_creation?: string
+          etat?: string
+          id?: string
+          nom: string
+        }
+        Update: {
+          code?: string
+          date_creation?: string
+          etat?: string
+          id?: string
+          nom?: string
+        }
+        Relationships: []
+      }
+      employes: {
+        Row: {
+          civilite: string | null
+          code: string
+          contrat: string | null
+          date_embauche: string | null
+          etat: string
+          id: string
+          nom: string
+          poste: string | null
+          prenom: string
+          service: string | null
+          telephone: string | null
+        }
+        Insert: {
+          civilite?: string | null
+          code: string
+          contrat?: string | null
+          date_embauche?: string | null
+          etat?: string
+          id?: string
+          nom: string
+          poste?: string | null
+          prenom: string
+          service?: string | null
+          telephone?: string | null
+        }
+        Update: {
+          civilite?: string | null
+          code?: string
+          contrat?: string | null
+          date_embauche?: string | null
+          etat?: string
+          id?: string
+          nom?: string
+          poste?: string | null
+          prenom?: string
+          service?: string | null
+          telephone?: string | null
+        }
+        Relationships: []
+      }
+      planning_events: {
+        Row: {
+          beneficiaire: string
+          code: string
+          date: string
+          debut: string
+          debut_reel: string | null
+          employe: string
+          fin: string
+          fin_reelle: string | null
+          id: string
+          statut: string
+        }
+        Insert: {
+          beneficiaire: string
+          code: string
+          date: string
+          debut: string
+          debut_reel?: string | null
+          employe: string
+          fin: string
+          fin_reelle?: string | null
+          id?: string
+          statut?: string
+        }
+        Update: {
+          beneficiaire?: string
+          code?: string
+          date?: string
+          debut?: string
+          debut_reel?: string | null
+          employe?: string
+          fin?: string
+          fin_reelle?: string | null
+          id?: string
+          statut?: string
+        }
+        Relationships: []
+      }
+      secteurs: {
+        Row: {
+          code: string
+          etat: string
+          id: string
+          nb_beneficiaires: number
+          nb_employes: number
+          nom: string
+          service: string | null
+        }
+        Insert: {
+          code: string
+          etat?: string
+          id?: string
+          nb_beneficiaires?: number
+          nb_employes?: number
+          nom: string
+          service?: string | null
+        }
+        Update: {
+          code?: string
+          etat?: string
+          id?: string
+          nb_beneficiaires?: number
+          nb_employes?: number
+          nom?: string
+          service?: string | null
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          client_id: string | null
+          client_nom: string | null
+          code: string
+          date_creation: string
+          etat: string
+          id: string
+          nom: string
+          type: string
+        }
+        Insert: {
+          client_id?: string | null
+          client_nom?: string | null
+          code: string
+          date_creation?: string
+          etat?: string
+          id?: string
+          nom: string
+          type: string
+        }
+        Update: {
+          client_id?: string | null
+          client_nom?: string | null
+          code?: string
+          date_creation?: string
+          etat?: string
+          id?: string
+          nom?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "services_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
