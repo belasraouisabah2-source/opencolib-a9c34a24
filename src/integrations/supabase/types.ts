@@ -122,6 +122,39 @@ export type Database = {
         }
         Relationships: []
       }
+      factures: {
+        Row: {
+          beneficiaire: string
+          code: string
+          id: string
+          montant_ht: number
+          montant_ttc: number
+          periode: string
+          statut: string
+          tva: number
+        }
+        Insert: {
+          beneficiaire: string
+          code: string
+          id?: string
+          montant_ht?: number
+          montant_ttc?: number
+          periode: string
+          statut?: string
+          tva?: number
+        }
+        Update: {
+          beneficiaire?: string
+          code?: string
+          id?: string
+          montant_ht?: number
+          montant_ttc?: number
+          periode?: string
+          statut?: string
+          tva?: number
+        }
+        Relationships: []
+      }
       planning_events: {
         Row: {
           beneficiaire: string
