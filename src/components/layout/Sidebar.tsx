@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard,
   Building2,
@@ -12,6 +13,7 @@ import {
   ChevronRight,
   Heart,
   MapPin,
+  LogOut,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -50,6 +52,7 @@ const menuSections = [
 const Sidebar = () => {
   const [collapsed] = useState<string[]>([]);
   const location = useLocation();
+  const { signOut, user, roles } = useAuth();
 
   return (
     <aside className="erp-sidebar">
@@ -111,9 +114,12 @@ const Sidebar = () => {
             <Users className="w-4 h-4 text-sidebar-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-sidebar-primary-foreground truncate">Admin</p>
-            <p className="text-[10px] text-sidebar-foreground/50">Administrateur</p>
+            <p className="text-xs font-medium text-sidebar-primary-foreground truncate">{user?.email ?? "Utilisateur"}</p>
+            <p className="text-[10px] text-sidebar-foreground/50">{roles.length > 0 ? roles[0].replace("_", " ") : "Aucun rôle"}</p>
           </div>
+          <button onClick={signOut} className="p-1.5 rounded-lg hover:bg-sidebar-accent transition-colors" title="Déconnexion">
+            <LogOut className="w-4 h-4 text-sidebar-foreground" />
+          </button>
         </div>
       </div>
     </aside>
