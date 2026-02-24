@@ -50,12 +50,6 @@ const AdminUsers = () => {
     queryKey: ["admin-users"],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke("admin-users", {
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-        body: null,
-        method: "GET",
-      });
-      // supabase.functions.invoke always uses POST, so we use query param
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users?action=list`,
         {
