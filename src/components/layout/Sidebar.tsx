@@ -11,6 +11,7 @@ import {
   ChevronDown,
   ChevronRight,
   Heart,
+  MapPin,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -26,6 +27,7 @@ const menuSections = [
     items: [
       { to: "/clients", icon: Building2, label: "Clients" },
       { to: "/services", icon: Briefcase, label: "Services" },
+      { to: "/secteurs", icon: MapPin, label: "Secteurs" },
       { to: "/beneficiaires", icon: Heart, label: "Bénéficiaires" },
     ],
   },
