@@ -15,9 +15,14 @@ const Secteurs = () => {
   const updateMutation = useUpdateSecteur();
   const deleteMutation = useDeleteSecteur();
 
+  const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const filtered = (secteurs ?? []).filter(s =>
+    [s.code, s.nom, s.service, s.etat].some(v => v?.toLowerCase().includes(search.toLowerCase()))
+  );
 
   const fields: FieldConfig[] = useMemo(() => [
     { name: "code", label: "Code", required: true, placeholder: "SEC007" },
@@ -52,7 +57,7 @@ const Secteurs = () => {
       <div className="module-header">
         <div>
           <h1 className="page-title">Secteurs</h1>
-          <p className="text-sm text-muted-foreground mt-1">{secteurs?.length ?? 0} secteurs configurés</p>
+          <p className="text-sm text-muted-foreground mt-1">{filtered.length} secteurs configurés</p>
         </div>
         <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nouveau secteur</Button>
       </div>
@@ -61,7 +66,7 @@ const Secteurs = () => {
         <div className="p-4 border-b flex items-center gap-3">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Rechercher un secteur..." className="pl-9 h-9 bg-secondary border-0" />
+            <Input placeholder="Rechercher un secteur..." className="pl-9 h-9 bg-secondary border-0" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
         </div>
         <Table>
@@ -79,7 +84,7 @@ const Secteurs = () => {
           <TableBody>
             {isLoading ? (
               <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Chargement...</TableCell></TableRow>
-            ) : secteurs?.map((s) => (
+            ) : filtered.map((s) => (
               <TableRow key={s.id} className="cursor-pointer hover:bg-muted/50">
                 <TableCell className="font-mono text-sm text-muted-foreground">{s.code}</TableCell>
                 <TableCell className="font-medium">{s.nom}</TableCell>

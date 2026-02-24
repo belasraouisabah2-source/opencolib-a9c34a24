@@ -21,9 +21,14 @@ const Facturation = () => {
   const updateMutation = useUpdateFacture();
   const deleteMutation = useDeleteFacture();
 
+  const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const filtered = (factures ?? []).filter(f =>
+    [f.code, f.beneficiaire, f.periode, f.statut].some(v => v?.toLowerCase().includes(search.toLowerCase()))
+  );
 
   const fields: FieldConfig[] = useMemo(() => [
     { name: "code", label: "N° Facture", required: true, placeholder: "FAC-2026-006" },
@@ -60,7 +65,7 @@ const Facturation = () => {
       <div className="module-header">
         <div>
           <h1 className="page-title">Facturation</h1>
-          <p className="text-sm text-muted-foreground mt-1">{factures?.length ?? 0} factures</p>
+          <p className="text-sm text-muted-foreground mt-1">{filtered.length} factures</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" />Exporter</Button>
@@ -72,7 +77,7 @@ const Facturation = () => {
         <div className="p-4 border-b flex items-center gap-3">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Rechercher une facture..." className="pl-9 h-9 bg-secondary border-0" />
+            <Input placeholder="Rechercher une facture..." className="pl-9 h-9 bg-secondary border-0" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
         </div>
         <Table>
@@ -91,7 +96,7 @@ const Facturation = () => {
           <TableBody>
             {isLoading ? (
               <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Chargement...</TableCell></TableRow>
-            ) : factures?.map((f) => (
+            ) : filtered.map((f) => (
               <TableRow key={f.id} className="cursor-pointer hover:bg-muted/50">
                 <TableCell className="font-mono text-sm text-muted-foreground">{f.code}</TableCell>
                 <TableCell className="font-medium">{f.beneficiaire}</TableCell>
