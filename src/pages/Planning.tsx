@@ -11,6 +11,8 @@ import {
   GripVertical,
   User,
   ArrowLeft,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { usePlanningEvents, useUpdatePlanningEvent, useInsertPlanningEvent, useEmployes, useBeneficiaires, useServices, useSecteurs } from "@/hooks/useSupabaseData";
+import { usePlanningEvents, useUpdatePlanningEvent, useInsertPlanningEvent, useDeletePlanningEvent, useEmployes, useBeneficiaires, useServices, useSecteurs } from "@/hooks/useSupabaseData";
+import DeleteDialog from "@/components/crud/DeleteDialog";
 import EntityFormDialog, { FieldConfig } from "@/components/crud/EntityFormDialog";
 import { addDays, startOfWeek, format, getISOWeek, parseISO, differenceInMinutes, parse } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -68,6 +71,8 @@ const Planning = ({ defaultViewMode = "employe" }: { defaultViewMode?: "employe"
   const [selectedBeneficiaire, setSelectedBeneficiaire] = useState<string>("");
   const [createFormOpen, setCreateFormOpen] = useState(false);
   const [createDate, setCreateDate] = useState<string>("");
+  const [editFormOpen, setEditFormOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data: planningEvents } = usePlanningEvents();
   const { data: employes } = useEmployes();
@@ -76,6 +81,7 @@ const Planning = ({ defaultViewMode = "employe" }: { defaultViewMode?: "employe"
   const { data: secteurs } = useSecteurs();
   const updateEvent = useUpdatePlanningEvent();
   const insertEvent = useInsertPlanningEvent();
+  const deleteEvent = useDeletePlanningEvent();
 
   // ── drag & drop handlers ──
   const handleDragStart = useCallback((e: DragEvent<HTMLDivElement>, ev: any) => {
@@ -228,6 +234,35 @@ const Planning = ({ defaultViewMode = "employe" }: { defaultViewMode?: "employe"
       statut: "Planifiée",
     }, { onSuccess: () => setCreateFormOpen(false) });
   }, [insertEvent]);
+
+  const handleEditSubmit = useCallback((data: Record<string, string>) => {
+    if (!selectedEvent) return;
+    updateEvent.mutate({
+      id: selectedEvent.id,
+      code: data.code,
+      beneficiaire: data.beneficiaire,
+      employe: data.employe,
+      date: data.date,
+      debut: data.debut,
+      fin: data.fin,
+    } as any, {
+      onSuccess: () => {
+        setEditFormOpen(false);
+        setSelectedEvent(null);
+      },
+    });
+  }, [updateEvent, selectedEvent]);
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (!selectedEvent) return;
+    deleteEvent.mutate(selectedEvent.id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        setSelectedEvent(null);
+        setPanelOpen(false);
+      },
+    });
+  }, [deleteEvent, selectedEvent]);
 
   return (
     <div className="space-y-4">
@@ -508,13 +543,51 @@ const Planning = ({ defaultViewMode = "employe" }: { defaultViewMode?: "employe"
             )}
 
             {selectedEvent.statut === "Planifiée" && (
-              <p className="text-[10px] text-muted-foreground italic">
-                Drag & drop possible (intervention non débutée)
-              </p>
+              <>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => setEditFormOpen(true)}>
+                    <Pencil className="w-4 h-4 mr-2" />
+                    Modifier
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1 text-destructive hover:text-destructive" onClick={() => setDeleteDialogOpen(true)}>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Supprimer
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground italic">
+                  Drag & drop possible (intervention non débutée)
+                </p>
+              </>
             )}
           </div>
         )}
       </div>
+
+      <EntityFormDialog
+        open={editFormOpen}
+        onOpenChange={setEditFormOpen}
+        title="Modifier l'intervention"
+        fields={createFields}
+        defaultValues={{
+          code: selectedEvent?.code ?? "",
+          beneficiaire: selectedEvent?.beneficiaire ?? "",
+          employe: selectedEvent?.employe ?? "",
+          date: selectedEvent?.date ?? "",
+          debut: fmtTime(selectedEvent?.debut) ?? "",
+          fin: fmtTime(selectedEvent?.fin) ?? "",
+        }}
+        onSubmit={handleEditSubmit}
+        loading={updateEvent.isPending}
+      />
+
+      <DeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        title="Supprimer l'intervention"
+        description={`Voulez-vous vraiment supprimer l'intervention ${selectedEvent?.code ?? ""} ?`}
+        loading={deleteEvent.isPending}
+      />
 
       <EntityFormDialog
         open={createFormOpen}
