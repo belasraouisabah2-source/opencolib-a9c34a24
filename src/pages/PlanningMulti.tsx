@@ -247,11 +247,13 @@ const WeekCalendarCard = ({
   events,
   weekDays,
   weekNum,
+  onReassign,
 }: {
   employee: any;
   events: any[];
   weekDays: Date[];
   weekNum: number;
+  onReassign: (eventId: string, newEmploye: string, newDate: string) => void;
 }) => {
   const empName = `${employee.nom} ${employee.prenom}`;
   const empEvents = events.filter((e) => e.employe === empName);
@@ -282,17 +284,35 @@ const WeekCalendarCard = ({
           return (
             <div
               key={dk}
-              className={`p-1 border-r last:border-r-0 border-b space-y-0.5 ${isWeekend ? "bg-muted/20" : ""}`}
+              className={`p-1 border-r last:border-r-0 border-b space-y-0.5 transition-colors ${isWeekend ? "bg-muted/20" : ""}`}
+              onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; e.currentTarget.classList.add("bg-primary/10"); }}
+              onDragLeave={(e) => { e.currentTarget.classList.remove("bg-primary/10"); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.remove("bg-primary/10");
+                const eventId = e.dataTransfer.getData("text/event-id");
+                if (!eventId) return;
+                onReassign(eventId, empName, dk);
+              }}
             >
-              {dayEvs.map((ev) => (
-                <div
-                  key={ev.id}
-                  className={`p-1 rounded text-[10px] truncate ${statusColor(ev.statut)} text-white`}
-                  title={`${ev.beneficiaire} ${fmtTime(ev.debut)}-${fmtTime(ev.fin)}`}
-                >
-                  {fmtTime(ev.debut)} {ev.beneficiaire.split(" ")[0]}
-                </div>
-              ))}
+              {dayEvs.map((ev) => {
+                const isDraggable = ev.statut === "Planifiée";
+                return (
+                  <div
+                    key={ev.id}
+                    draggable={isDraggable}
+                    onDragStart={(e) => {
+                      if (!isDraggable) { e.preventDefault(); return; }
+                      e.dataTransfer.setData("text/event-id", ev.id);
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    className={`p-1 rounded text-[10px] truncate ${statusColor(ev.statut)} text-white ${isDraggable ? "cursor-grab active:cursor-grabbing hover:shadow-md" : ""}`}
+                    title={`${ev.beneficiaire} ${fmtTime(ev.debut)}-${fmtTime(ev.fin)}`}
+                  >
+                    {fmtTime(ev.debut)} {ev.beneficiaire.split(" ")[0]}
+                  </div>
+                );
+              })}
             </div>
           );
         })}
@@ -493,6 +513,9 @@ const PlanningMulti = () => {
                 events={allEvents}
                 weekDays={weekDays}
                 weekNum={weekNum}
+                onReassign={(eventId, newEmploye, newDate) => {
+                  updateEvent.mutate({ id: eventId, employe: newEmploye, date: newDate } as any);
+                }}
               />
             ))}
           </div>
