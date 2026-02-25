@@ -74,6 +74,16 @@ export const useFactures = () =>
     },
   });
 
+export const useBeneficiaireAbsences = () =>
+  useQuery({
+    queryKey: ["beneficiaire_absences"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("beneficiaire_absences").select("*").order("date_debut", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
 // ── Generic mutation factory ──
 
 type TableName = "clients" | "services" | "secteurs" | "beneficiaires" | "employes" | "planning_events" | "factures";
