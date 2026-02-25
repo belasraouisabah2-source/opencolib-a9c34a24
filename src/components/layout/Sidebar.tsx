@@ -36,7 +36,8 @@ const menuSections = [
   {
     label: "OPÉRATIONS",
     items: [
-      { to: "/planning", icon: CalendarDays, label: "Planning" },
+      { to: "/planning", icon: CalendarDays, label: "Planning Employés" },
+      { to: "/planning-beneficiaires", icon: Heart, label: "Planning Bénéficiaires" },
       { to: "/controle-heures", icon: Clock, label: "Contrôle des heures" },
     ],
   },

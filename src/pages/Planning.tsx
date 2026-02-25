@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, DragEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
@@ -53,7 +54,8 @@ const timeDiffHours = (start: string, end: string): number => {
 
 // ── component ──
 
-const Planning = () => {
+const Planning = ({ defaultViewMode = "employe" }: { defaultViewMode?: "employe" | "beneficiaire" }) => {
+  const navigate = useNavigate();
   const [weekOffset, setWeekOffset] = useState(0);
   const [nbWeeks, setNbWeeks] = useState(1);
   const [selectedEmploye, setSelectedEmploye] = useState<string>("");
@@ -62,7 +64,7 @@ const Planning = () => {
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"employe" | "beneficiaire">("employe");
+  const [viewMode, setViewMode] = useState<"employe" | "beneficiaire">(defaultViewMode);
   const [selectedBeneficiaire, setSelectedBeneficiaire] = useState<string>("");
   const [createFormOpen, setCreateFormOpen] = useState(false);
   const [createDate, setCreateDate] = useState<string>("");
@@ -233,7 +235,7 @@ const Planning = () => {
       <div className="module-header">
         <div className="flex items-center gap-3">
           {viewMode === "beneficiaire" && (
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={switchToEmployeView}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/planning")}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
           )}
@@ -486,7 +488,7 @@ const Planning = () => {
                 variant="outline"
                 size="sm"
                 className="w-full"
-                onClick={() => switchToBeneficiaireView(selectedEvent.beneficiaire)}
+                onClick={() => navigate("/planning-beneficiaires")}
               >
                 <User className="w-4 h-4 mr-2" />
                 Planning Bénéficiaire
@@ -498,10 +500,7 @@ const Planning = () => {
                 variant="outline"
                 size="sm"
                 className="w-full"
-                onClick={() => {
-                  setSelectedEmploye(selectedEvent.employe);
-                  switchToEmployeView();
-                }}
+                onClick={() => navigate("/planning")}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Planning Employé
