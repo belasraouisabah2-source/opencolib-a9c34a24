@@ -8,6 +8,8 @@ import {
   X,
   CalendarDays,
   GripVertical,
+  User,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,6 +60,8 @@ const Planning = () => {
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"employe" | "beneficiaire">("employe");
+  const [selectedBeneficiaire, setSelectedBeneficiaire] = useState<string>("");
 
   const { data: planningEvents } = usePlanningEvents();
   const { data: employes } = useEmployes();
@@ -138,11 +142,23 @@ const Planning = () => {
   const allDays = useMemo(() => weeks.flatMap(w => w.days), [weeks]);
   const dateKeys = useMemo(() => allDays.map(d => format(d, "yyyy-MM-dd")), [allDays]);
 
-  // ── filtered events ──
-  const filteredEvents = useMemo(
-    () => (planningEvents ?? []).filter(e => e.employe === activeEmploye),
-    [planningEvents, activeEmploye]
-  );
+  // ── filtered events (depends on view mode) ──
+  const uniqueBeneficiaires = useMemo(() => {
+    const names = new Set((planningEvents ?? []).map(e => e.beneficiaire));
+    return Array.from(names).sort();
+  }, [planningEvents]);
+
+  const activeBeneficiaire = useMemo(() => {
+    if (selectedBeneficiaire && uniqueBeneficiaires.includes(selectedBeneficiaire)) return selectedBeneficiaire;
+    return uniqueBeneficiaires[0] ?? "";
+  }, [selectedBeneficiaire, uniqueBeneficiaires]);
+
+  const filteredEvents = useMemo(() => {
+    if (viewMode === "beneficiaire") {
+      return (planningEvents ?? []).filter(e => e.beneficiaire === activeBeneficiaire);
+    }
+    return (planningEvents ?? []).filter(e => e.employe === activeEmploye);
+  }, [planningEvents, activeEmploye, activeBeneficiaire, viewMode]);
 
   // ── cumul heures ──
   const cumulHeures = useMemo(() => {
@@ -162,17 +178,37 @@ const Planning = () => {
     setPanelOpen(true);
   }, []);
 
+  const switchToBeneficiaireView = useCallback((beneficiaire: string) => {
+    setSelectedBeneficiaire(beneficiaire);
+    setViewMode("beneficiaire");
+    setSelectedEvent(null);
+  }, []);
+
+  const switchToEmployeView = useCallback(() => {
+    setViewMode("employe");
+    setSelectedEvent(null);
+  }, []);
+
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="module-header">
-        <div>
-          <h1 className="page-title">Planning Employés</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {nbWeeks > 1
-              ? `Semaines ${weeks.map(w => w.weekNum).join(", ")} — ${format(startDate, "MMMM yyyy", { locale: fr })}`
-              : `Semaine ${weeks[0]?.weekNum} — ${format(startDate, "MMMM yyyy", { locale: fr })}`}
-          </p>
+        <div className="flex items-center gap-3">
+          {viewMode === "beneficiaire" && (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={switchToEmployeView}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          )}
+          <div>
+            <h1 className="page-title">
+              {viewMode === "employe" ? "Planning Employés" : "Planning Bénéficiaire"}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {nbWeeks > 1
+                ? `Semaines ${weeks.map(w => w.weekNum).join(", ")} — ${format(startDate, "MMMM yyyy", { locale: fr })}`
+                : `Semaine ${weeks[0]?.weekNum} — ${format(startDate, "MMMM yyyy", { locale: fr })}`}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWeekOffset(o => o - 1)}>
@@ -199,41 +235,56 @@ const Planning = () => {
           </SelectContent>
         </Select>
 
-        <Select value={serviceFilter} onValueChange={setServiceFilter}>
-          <SelectTrigger className="w-[180px] h-9">
-            <SelectValue placeholder="Service" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les services</SelectItem>
-            {(services ?? []).map(s => (
-              <SelectItem key={s.id} value={s.nom}>{s.nom}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {viewMode === "employe" ? (
+          <>
+            <Select value={serviceFilter} onValueChange={setServiceFilter}>
+              <SelectTrigger className="w-[180px] h-9">
+                <SelectValue placeholder="Service" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les services</SelectItem>
+                {(services ?? []).map(s => (
+                  <SelectItem key={s.id} value={s.nom}>{s.nom}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <Select value={secteurFilter} onValueChange={setSecteurFilter}>
-          <SelectTrigger className="w-[180px] h-9">
-            <SelectValue placeholder="Secteur" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les secteurs</SelectItem>
-            {(secteurs ?? []).map(s => (
-              <SelectItem key={s.id} value={s.nom}>{s.nom}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <Select value={secteurFilter} onValueChange={setSecteurFilter}>
+              <SelectTrigger className="w-[180px] h-9">
+                <SelectValue placeholder="Secteur" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les secteurs</SelectItem>
+                {(secteurs ?? []).map(s => (
+                  <SelectItem key={s.id} value={s.nom}>{s.nom}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <Select value={activeEmploye} onValueChange={setSelectedEmploye}>
-          <SelectTrigger className="w-[220px] h-9">
-            <SelectValue placeholder="Sélectionner un employé" />
-          </SelectTrigger>
-          <SelectContent>
-            {filteredEmployes.map(e => {
-              const name = `${e.nom} ${e.prenom}`;
-              return <SelectItem key={e.id} value={name}>{e.prenom} {e.nom}</SelectItem>;
-            })}
-          </SelectContent>
-        </Select>
+            <Select value={activeEmploye} onValueChange={setSelectedEmploye}>
+              <SelectTrigger className="w-[220px] h-9">
+                <SelectValue placeholder="Sélectionner un employé" />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredEmployes.map(e => {
+                  const name = `${e.nom} ${e.prenom}`;
+                  return <SelectItem key={e.id} value={name}>{e.prenom} {e.nom}</SelectItem>;
+                })}
+              </SelectContent>
+            </Select>
+          </>
+        ) : (
+          <Select value={activeBeneficiaire} onValueChange={setSelectedBeneficiaire}>
+            <SelectTrigger className="w-[250px] h-9">
+              <SelectValue placeholder="Sélectionner un bénéficiaire" />
+            </SelectTrigger>
+            <SelectContent>
+              {uniqueBeneficiaires.map(b => (
+                <SelectItem key={b} value={b}>{b}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         <div className="ml-auto flex items-center gap-2 text-sm">
           <CalendarDays className="w-4 h-4 text-muted-foreground" />
@@ -301,7 +352,9 @@ const Planning = () => {
                               {isDraggable && <GripVertical className="w-3 h-3 text-muted-foreground/50 shrink-0" />}
                               {statusIcon(ev.statut)}
                               <span className="font-semibold text-foreground uppercase truncate">
-                                {ev.beneficiaire.split(" ")[0]}
+                                {viewMode === "beneficiaire"
+                                  ? ev.employe.split(" ").pop()
+                                  : ev.beneficiaire.split(" ")[0]}
                               </span>
                             </div>
                             <p className="text-muted-foreground">
@@ -383,6 +436,33 @@ const Planning = () => {
                 </div>
               </div>
             </div>
+
+            {viewMode === "employe" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => switchToBeneficiaireView(selectedEvent.beneficiaire)}
+              >
+                <User className="w-4 h-4 mr-2" />
+                Planning Bénéficiaire
+              </Button>
+            )}
+
+            {viewMode === "beneficiaire" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  setSelectedEmploye(selectedEvent.employe);
+                  switchToEmployeView();
+                }}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Planning Employé
+              </Button>
+            )}
 
             {selectedEvent.statut === "Planifiée" && (
               <p className="text-[10px] text-muted-foreground italic">
