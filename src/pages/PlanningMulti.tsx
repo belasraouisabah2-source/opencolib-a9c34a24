@@ -298,19 +298,36 @@ const WeekCalendarCard = ({
               {dayEvs.map((ev) => {
                 const isDraggable = ev.statut === "Planifiée";
                 return (
-                  <div
-                    key={ev.id}
-                    draggable={isDraggable}
-                    onDragStart={(e) => {
-                      if (!isDraggable) { e.preventDefault(); return; }
-                      e.dataTransfer.setData("text/event-id", ev.id);
-                      e.dataTransfer.effectAllowed = "move";
-                    }}
-                    className={`p-1 rounded text-[10px] truncate ${statusColor(ev.statut)} text-white ${isDraggable ? "cursor-grab active:cursor-grabbing hover:shadow-md" : ""}`}
-                    title={`${ev.beneficiaire} ${fmtTime(ev.debut)}-${fmtTime(ev.fin)}`}
-                  >
-                    {fmtTime(ev.debut)} {ev.beneficiaire.split(" ")[0]}
-                  </div>
+                  <HoverCard key={ev.id} openDelay={200} closeDelay={100}>
+                    <HoverCardTrigger asChild>
+                      <div
+                        draggable={isDraggable}
+                        onDragStart={(e) => {
+                          if (!isDraggable) { e.preventDefault(); return; }
+                          e.dataTransfer.setData("text/event-id", ev.id);
+                          e.dataTransfer.effectAllowed = "move";
+                        }}
+                        className={`p-1 rounded text-[10px] truncate ${statusColor(ev.statut)} text-white ${isDraggable ? "cursor-grab active:cursor-grabbing hover:shadow-md" : ""}`}
+                      >
+                        {fmtTime(ev.debut)} {ev.beneficiaire.split(" ")[0]}
+                      </div>
+                    </HoverCardTrigger>
+                    <HoverCardContent side="top" className="w-56 text-xs space-y-2 p-3" align="start">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-sm text-foreground">{ev.code}</span>
+                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${statusColor(ev.statut)} text-white`}>
+                          {ev.statut}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        <p><span className="text-muted-foreground">Bénéficiaire :</span> <span className="font-medium">{ev.beneficiaire}</span></p>
+                        <p><span className="text-muted-foreground">Employé :</span> <span className="font-medium">{ev.employe}</span></p>
+                        <p><span className="text-muted-foreground">Horaire :</span> <span className="font-medium">{fmtTime(ev.debut)} — {fmtTime(ev.fin)}</span></p>
+                        {ev.debut_reel && <p><span className="text-muted-foreground">Début réel :</span> <span className="font-medium">{fmtTime(ev.debut_reel)}</span></p>}
+                        {ev.fin_reelle && <p><span className="text-muted-foreground">Fin réelle :</span> <span className="font-medium">{fmtTime(ev.fin_reelle)}</span></p>}
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
                 );
               })}
             </div>
