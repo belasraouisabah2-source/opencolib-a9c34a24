@@ -259,8 +259,6 @@ const Topbar = () => {
           )}
         </div>
 
-        <div className="w-px h-8 bg-border" />
-        <span className="text-sm text-muted-foreground">Service Paris Nord</span>
       </div>
     </header>
   );
