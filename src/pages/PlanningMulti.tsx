@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect, DragEvent } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { usePlanningEvents, useEmployes, useServices, useSecteurs } from "@/hooks/useSupabaseData";
+import { usePlanningEvents, useUpdatePlanningEvent, useEmployes, useServices, useSecteurs } from "@/hooks/useSupabaseData";
 import { addDays, startOfWeek, format, getISOWeek, parse, differenceInMinutes } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -51,11 +51,13 @@ const DayTimelineView = ({
   employees,
   events,
   search,
+  onMoveEvent,
 }: {
   date: Date;
   employees: any[];
   events: any[];
   search: string;
+  onMoveEvent: (eventId: string, newEmploye: string, newDebut: string, newFin: string) => void;
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const dateKey = format(date, "yyyy-MM-dd");
@@ -130,7 +132,7 @@ const DayTimelineView = ({
           </div>
 
           {/* Rows */}
-          <div className="relative" style={{ width: 24 * HOUR_WIDTH }}>
+          <div className="relative" data-timeline style={{ width: 24 * HOUR_WIDTH }}>
             {/* Grid lines */}
             {HOURS.map((h) => (
               <div
@@ -159,17 +161,46 @@ const DayTimelineView = ({
                   key={emp.id}
                   className={`relative border-b ${rowIdx % 2 === 0 ? "" : "bg-muted/20"}`}
                   style={{ height: ROW_HEIGHT }}
+                  onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const data = e.dataTransfer.getData("application/json");
+                    if (!data) return;
+                    const { eventId, durationMin } = JSON.parse(data);
+                    // Calculate drop time from X position relative to timeline
+                    const timelineEl = e.currentTarget.closest("[data-timeline]");
+                    if (!timelineEl) return;
+                    const rect = timelineEl.getBoundingClientRect();
+                    const scrollLeft = (timelineEl as HTMLElement).parentElement?.scrollLeft ?? 0;
+                    const x = e.clientX - rect.left + scrollLeft;
+                    let startMin = Math.round((x / HOUR_WIDTH) * 60 / 15) * 15; // snap to 15min
+                    startMin = Math.max(0, Math.min(startMin, 24 * 60 - durationMin));
+                    const endMin = startMin + durationMin;
+                    const newDebut = `${String(Math.floor(startMin / 60)).padStart(2, "0")}:${String(startMin % 60).padStart(2, "0")}:00`;
+                    const newFin = `${String(Math.floor(endMin / 60)).padStart(2, "0")}:${String(endMin % 60).padStart(2, "0")}:00`;
+                    onMoveEvent(eventId, empName, newDebut, newFin);
+                  }}
                 >
                   {empEvents.map((ev) => {
                     const startMin = timeToMinutes(ev.debut);
                     const endMin = timeToMinutes(ev.fin);
                     const left = (startMin / 60) * HOUR_WIDTH;
                     const width = Math.max(((endMin - startMin) / 60) * HOUR_WIDTH, 30);
+                    const isDraggable = ev.statut === "Planifiée";
                     return (
                       <div
                         key={ev.id}
+                        draggable={isDraggable}
+                        onDragStart={(e) => {
+                          if (!isDraggable) { e.preventDefault(); return; }
+                          e.dataTransfer.setData("application/json", JSON.stringify({
+                            eventId: ev.id,
+                            durationMin: endMin - startMin,
+                          }));
+                          e.dataTransfer.effectAllowed = "move";
+                        }}
                         title={`${ev.beneficiaire} — ${fmtTime(ev.debut)} à ${fmtTime(ev.fin)}`}
-                        className={`absolute top-1.5 rounded-md px-2 text-[11px] font-semibold text-white flex items-center truncate cursor-default shadow-sm ${statusColor(ev.statut)}`}
+                        className={`absolute top-1.5 rounded-md px-2 text-[11px] font-semibold text-white flex items-center truncate shadow-sm ${statusColor(ev.statut)} ${isDraggable ? "cursor-grab active:cursor-grabbing hover:shadow-md" : "cursor-default"}`}
                         style={{
                           left,
                           width,
@@ -267,6 +298,7 @@ const PlanningMulti = () => {
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
 
   const { data: planningEvents } = usePlanningEvents();
+  const updateEvent = useUpdatePlanningEvent();
   const { data: employes } = useEmployes();
   const { data: services } = useServices();
   const { data: secteurs } = useSecteurs();
@@ -406,6 +438,9 @@ const PlanningMulti = () => {
           employees={allEmployees}
           events={allEvents}
           search={search}
+          onMoveEvent={(eventId, newEmploye, newDebut, newFin) => {
+            updateEvent.mutate({ id: eventId, employe: newEmploye, debut: newDebut, fin: newFin } as any);
+          }}
         />
       ) : (
         <div className="space-y-3">
