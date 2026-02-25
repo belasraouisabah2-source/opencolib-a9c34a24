@@ -19,9 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { usePlanningEvents, useUpdatePlanningEvent, useEmployes, useServices, useSecteurs } from "@/hooks/useSupabaseData";
+import { usePlanningEvents, useUpdatePlanningEvent, useInsertPlanningEvent, useEmployes, useBeneficiaires, useServices, useSecteurs } from "@/hooks/useSupabaseData";
+import EntityFormDialog, { FieldConfig } from "@/components/crud/EntityFormDialog";
 import { addDays, startOfWeek, format, getISOWeek, parseISO, differenceInMinutes, parse } from "date-fns";
 import { fr } from "date-fns/locale";
+import { Plus } from "lucide-react";
 
 // ── helpers ──
 
@@ -62,12 +64,16 @@ const Planning = () => {
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"employe" | "beneficiaire">("employe");
   const [selectedBeneficiaire, setSelectedBeneficiaire] = useState<string>("");
+  const [createFormOpen, setCreateFormOpen] = useState(false);
+  const [createDate, setCreateDate] = useState<string>("");
 
   const { data: planningEvents } = usePlanningEvents();
   const { data: employes } = useEmployes();
+  const { data: beneficiaires } = useBeneficiaires();
   const { data: services } = useServices();
   const { data: secteurs } = useSecteurs();
   const updateEvent = useUpdatePlanningEvent();
+  const insertEvent = useInsertPlanningEvent();
 
   // ── drag & drop handlers ──
   const handleDragStart = useCallback((e: DragEvent<HTMLDivElement>, ev: any) => {
@@ -188,6 +194,38 @@ const Planning = () => {
     setViewMode("employe");
     setSelectedEvent(null);
   }, []);
+
+  // ── create intervention ──
+  const handleCellClick = useCallback((dateKey: string, hasEvents: boolean) => {
+    if (hasEvents) return;
+    setCreateDate(dateKey);
+    setCreateFormOpen(true);
+  }, []);
+
+  const createFields: FieldConfig[] = useMemo(() => [
+    { name: "code", label: "Code", required: true, placeholder: "INT001" },
+    { name: "beneficiaire", label: "Bénéficiaire", type: "select", required: true,
+      options: (beneficiaires ?? []).map(b => ({ label: `${b.prenom} ${b.nom}`, value: `${b.prenom} ${b.nom}` })),
+      placeholder: "Sélectionner un bénéficiaire" },
+    { name: "employe", label: "Employé", type: "select", required: true,
+      options: (employes ?? []).map(e => ({ label: `${e.prenom} ${e.nom}`, value: `${e.nom} ${e.prenom}` })),
+      placeholder: "Sélectionner un employé" },
+    { name: "date", label: "Date", type: "date", required: true },
+    { name: "debut", label: "Heure début", required: true, placeholder: "08:00" },
+    { name: "fin", label: "Heure fin", required: true, placeholder: "09:00" },
+  ], [beneficiaires, employes]);
+
+  const handleCreateSubmit = useCallback((data: Record<string, string>) => {
+    insertEvent.mutate({
+      code: data.code,
+      beneficiaire: data.beneficiaire,
+      employe: data.employe,
+      date: data.date,
+      debut: data.debut,
+      fin: data.fin,
+      statut: "Planifiée",
+    }, { onSuccess: () => setCreateFormOpen(false) });
+  }, [insertEvent]);
 
   return (
     <div className="space-y-4">
@@ -336,8 +374,14 @@ const Planning = () => {
                       onDragOver={(e) => handleDragOver(e, dateKey)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, dateKey)}
-                      className={`p-1.5 border-r last:border-r-0 border-b space-y-1 transition-colors ${isWeekend ? "bg-muted/20" : ""} ${isDragOver ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : ""}`}
+                      onClick={() => handleCellClick(dateKey, dayEvents.length > 0)}
+                      className={`p-1.5 border-r last:border-r-0 border-b space-y-1 transition-colors cursor-pointer ${isWeekend ? "bg-muted/20" : ""} ${isDragOver ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : ""} ${dayEvents.length === 0 ? "hover:bg-primary/5 group" : ""}`}
                     >
+                      {dayEvents.length === 0 && (
+                        <div className="flex items-center justify-center h-full min-h-[60px] opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Plus className="w-5 h-5 text-muted-foreground/40" />
+                        </div>
+                      )}
                       {dayEvents.map(ev => {
                         const isDraggable = ev.statut === "Planifiée";
                         return (
@@ -472,6 +516,20 @@ const Planning = () => {
           </div>
         )}
       </div>
+
+      <EntityFormDialog
+        open={createFormOpen}
+        onOpenChange={setCreateFormOpen}
+        title="Nouvelle intervention"
+        fields={createFields}
+        defaultValues={{
+          date: createDate,
+          employe: activeEmploye,
+          statut: "Planifiée",
+        }}
+        onSubmit={handleCreateSubmit}
+        loading={insertEvent.isPending}
+      />
     </div>
   );
 };
