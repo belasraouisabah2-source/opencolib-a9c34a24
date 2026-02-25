@@ -14,6 +14,7 @@ import Beneficiaires from "./pages/Beneficiaires";
 import Employes from "./pages/Employes";
 import Planning from "./pages/Planning";
 import PlanningBeneficiaires from "./pages/PlanningBeneficiaires";
+import PlanningMulti from "./pages/PlanningMulti";
 import ControleHeures from "./pages/ControleHeures";
 import Facturation from "./pages/Facturation";
 import Auth from "./pages/Auth";
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/employes" element={<Employes />} />
               <Route path="/planning" element={<Planning />} />
               <Route path="/planning-beneficiaires" element={<PlanningBeneficiaires />} />
+              <Route path="/planning-multi" element={<PlanningMulti />} />
               <Route path="/controle-heures" element={<ControleHeures />} />
               <Route path="/facturation" element={<Facturation />} />
               <Route path="/admin/utilisateurs" element={<AdminUsers />} />

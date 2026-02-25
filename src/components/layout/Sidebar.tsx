@@ -38,6 +38,7 @@ const menuSections = [
     items: [
       { to: "/planning", icon: CalendarDays, label: "Planning Employés" },
       { to: "/planning-beneficiaires", icon: Heart, label: "Planning Bénéficiaires" },
+      { to: "/planning-multi", icon: Users, label: "Planning Multi" },
       { to: "/controle-heures", icon: Clock, label: "Contrôle des heures" },
     ],
   },
