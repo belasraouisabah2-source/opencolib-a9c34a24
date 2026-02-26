@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      actes_soins: {
+        Row: {
+          categorie: string
+          created_at: string
+          description: string | null
+          id: string
+          nom: string
+          tarif_defaut: number | null
+          type_service: string
+        }
+        Insert: {
+          categorie: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom: string
+          tarif_defaut?: number | null
+          type_service: string
+        }
+        Update: {
+          categorie?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom?: string
+          tarif_defaut?: number | null
+          type_service?: string
+        }
+        Relationships: []
+      }
       beneficiaire_absences: {
         Row: {
           beneficiaire_id: string
