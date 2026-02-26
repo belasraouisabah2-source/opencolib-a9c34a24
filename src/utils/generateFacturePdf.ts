@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 interface FactureData {
   code: string;
@@ -91,7 +91,7 @@ export function generateFacturePdf(facture: FactureData, contrat?: ContratData |
   // ── Montants table ──
   y += 10;
 
-  (doc as any).autoTable({
+  autoTable(doc, {
     startY: y,
     head: [["Désignation", "Montant"]],
     body: [
@@ -122,10 +122,11 @@ export function generateFacturePdf(facture: FactureData, contrat?: ContratData |
   });
 
   // ── Footer ──
-  const finalY = (doc as any).lastAutoTable.finalY + 30;
+  const finalY = (doc as any).lastAutoTable?.finalY ?? y + 50;
+  const footerY = Math.min(finalY + 30, doc.internal.pageSize.getHeight() - 15);
   doc.setFontSize(8);
   doc.setTextColor(160, 160, 160);
-  doc.text("Document généré automatiquement — OpenColib", pageWidth / 2, finalY, { align: "center" });
+  doc.text("Document généré automatiquement — OpenColib", pageWidth / 2, footerY, { align: "center" });
 
   // Download
   doc.save(`Facture_${facture.code}.pdf`);
