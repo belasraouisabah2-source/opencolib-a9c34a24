@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, DragEvent } from "react";
+import { useState, useMemo, useCallback, DragEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
@@ -25,6 +25,9 @@ import {
 import { usePlanningEvents, useUpdatePlanningEvent, useInsertPlanningEvent, useDeletePlanningEvent, useEmployes, useBeneficiaires, useServices, useSecteurs } from "@/hooks/useSupabaseData";
 import DeleteDialog from "@/components/crud/DeleteDialog";
 import EntityFormDialog, { FieldConfig } from "@/components/crud/EntityFormDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { addDays, startOfWeek, format, getISOWeek, parseISO, differenceInMinutes, parse } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Plus } from "lucide-react";
@@ -73,6 +76,8 @@ const Planning = ({ defaultViewMode = "employe" }: { defaultViewMode?: "employe"
   const [createDate, setCreateDate] = useState<string>("");
   const [editFormOpen, setEditFormOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [statusFormOpen, setStatusFormOpen] = useState(false);
+  const [statusFormData, setStatusFormData] = useState({ statut: "", debut_reel: "", fin_reelle: "" });
 
   const { data: planningEvents } = usePlanningEvents();
   const { data: employes } = useEmployes();
@@ -263,6 +268,41 @@ const Planning = ({ defaultViewMode = "employe" }: { defaultViewMode?: "employe"
       },
     });
   }, [deleteEvent, selectedEvent]);
+
+  const openStatusForm = useCallback(() => {
+    if (!selectedEvent) return;
+    setStatusFormData({
+      statut: selectedEvent.statut,
+      debut_reel: fmtTime(selectedEvent.debut_reel) ?? fmtTime(selectedEvent.debut) ?? "",
+      fin_reelle: fmtTime(selectedEvent.fin_reelle) ?? fmtTime(selectedEvent.fin) ?? "",
+    });
+    setStatusFormOpen(true);
+  }, [selectedEvent]);
+
+  const handleStatusSubmit = useCallback((e: FormEvent) => {
+    e.preventDefault();
+    if (!selectedEvent) return;
+    const payload: Record<string, unknown> = {
+      id: selectedEvent.id,
+      statut: statusFormData.statut,
+    };
+    if (statusFormData.statut === "En cours" || statusFormData.statut === "Terminée") {
+      payload.debut_reel = statusFormData.debut_reel || null;
+    }
+    if (statusFormData.statut === "Terminée") {
+      payload.fin_reelle = statusFormData.fin_reelle || null;
+    }
+    if (statusFormData.statut === "Planifiée") {
+      payload.debut_reel = null;
+      payload.fin_reelle = null;
+    }
+    updateEvent.mutate(payload as any, {
+      onSuccess: () => {
+        setStatusFormOpen(false);
+        setSelectedEvent({ ...selectedEvent, ...payload });
+      },
+    });
+  }, [updateEvent, selectedEvent, statusFormData]);
 
   return (
     <div className="space-y-4">
@@ -542,6 +582,11 @@ const Planning = ({ defaultViewMode = "employe" }: { defaultViewMode?: "employe"
               </Button>
             )}
 
+            <Button variant="outline" size="sm" className="w-full" onClick={openStatusForm}>
+              {statusIcon(selectedEvent.statut)}
+              <span className="ml-2">Changer le statut</span>
+            </Button>
+
             {selectedEvent.statut === "Planifiée" && (
               <>
                 <div className="flex gap-2">
@@ -602,6 +647,56 @@ const Planning = ({ defaultViewMode = "employe" }: { defaultViewMode?: "employe"
         onSubmit={handleCreateSubmit}
         loading={insertEvent.isPending}
       />
+      {/* Status change dialog */}
+      <Dialog open={statusFormOpen} onOpenChange={setStatusFormOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Modifier le statut</DialogTitle>
+            <DialogDescription>
+              Intervention {selectedEvent?.code} — {selectedEvent?.beneficiaire}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleStatusSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Statut</Label>
+              <Select value={statusFormData.statut} onValueChange={v => setStatusFormData(d => ({ ...d, statut: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Planifiée">Planifiée</SelectItem>
+                  <SelectItem value="En cours">En cours</SelectItem>
+                  <SelectItem value="Terminée">Terminée</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {(statusFormData.statut === "En cours" || statusFormData.statut === "Terminée") && (
+              <div className="space-y-2">
+                <Label>Début réel</Label>
+                <Input
+                  type="time"
+                  value={statusFormData.debut_reel}
+                  onChange={e => setStatusFormData(d => ({ ...d, debut_reel: e.target.value }))}
+                />
+              </div>
+            )}
+            {statusFormData.statut === "Terminée" && (
+              <div className="space-y-2">
+                <Label>Fin réelle</Label>
+                <Input
+                  type="time"
+                  value={statusFormData.fin_reelle}
+                  onChange={e => setStatusFormData(d => ({ ...d, fin_reelle: e.target.value }))}
+                />
+              </div>
+            )}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setStatusFormOpen(false)}>Annuler</Button>
+              <Button type="submit" disabled={updateEvent.isPending}>Enregistrer</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
