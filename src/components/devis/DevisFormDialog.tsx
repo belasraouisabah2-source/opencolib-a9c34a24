@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { useServices } from "@/hooks/useSupabaseData";
+import { useActesSoins, useServices } from "@/hooks/useSupabaseData";
 
 interface LigneDevis {
   id?: string;
@@ -39,7 +40,7 @@ const emptyLigne = (): LigneDevis => ({
 
 const DevisFormDialog = ({ open, onOpenChange, editItem, beneficiaires }: DevisFormDialogProps) => {
   const queryClient = useQueryClient();
-  const { data: services } = useServices();
+  const { data: servicesData } = useServices();
   const [loading, setLoading] = useState(false);
 
   const [code, setCode] = useState("");
@@ -50,6 +51,17 @@ const DevisFormDialog = ({ open, onOpenChange, editItem, beneficiaires }: DevisF
   const [notes, setNotes] = useState("");
   const [lignes, setLignes] = useState<LigneDevis[]>([emptyLigne()]);
 
+  // Determine the service type from the selected beneficiary's service
+  const selectedBeneficiaire = beneficiaires.find(b => b.id === beneficiaireId);
+  const serviceType = useMemo(() => {
+    if (!selectedBeneficiaire?.service || !servicesData) return null;
+    const svc = servicesData.find(s => s.nom === selectedBeneficiaire.service);
+    return svc?.type || null;
+  }, [selectedBeneficiaire, servicesData]);
+
+  // Fetch actes/soins filtered by service type
+  const { data: actesSoins } = useActesSoins(serviceType || undefined);
+
   useEffect(() => {
     if (!open) return;
     if (editItem) {
@@ -59,7 +71,6 @@ const DevisFormDialog = ({ open, onOpenChange, editItem, beneficiaires }: DevisF
       setDateValidite(editItem.date_validite);
       setStatut(editItem.statut);
       setNotes(editItem.notes || "");
-      // Load lignes
       supabase.from("devis_lignes").select("*").eq("devis_id", editItem.id).order("created_at").then(({ data }) => {
         if (data && data.length > 0) {
           setLignes(data.map(l => ({
@@ -86,12 +97,29 @@ const DevisFormDialog = ({ open, onOpenChange, editItem, beneficiaires }: DevisF
     }
   }, [open, editItem]);
 
+  // Reset lignes when beneficiary changes (different service type = different actes)
+  const handleBeneficiaireChange = (id: string) => {
+    setBeneficiaireId(id);
+    if (!editItem) {
+      setLignes([emptyLigne()]);
+    }
+  };
+
   const updateLigne = (index: number, field: keyof LigneDevis, value: any) => {
     setLignes(prev => {
       const updated = [...prev];
       (updated[index] as any)[field] = value;
       if (field === "duree_heures" || field === "tarif_horaire") {
         updated[index].montant = updated[index].duree_heures * updated[index].tarif_horaire;
+      }
+      // Auto-fill tarif and description when selecting an acte/soin
+      if (field === "service" && actesSoins) {
+        const acte = actesSoins.find(a => a.nom === value);
+        if (acte) {
+          updated[index].tarif_horaire = Number(acte.tarif_defaut);
+          updated[index].description = acte.description || "";
+          updated[index].montant = updated[index].duree_heures * Number(acte.tarif_defaut);
+        }
       }
       return updated;
     });
@@ -101,8 +129,6 @@ const DevisFormDialog = ({ open, onOpenChange, editItem, beneficiaires }: DevisF
   const removeLigne = (index: number) => setLignes(prev => prev.filter((_, i) => i !== index));
 
   const montantTotal = lignes.reduce((sum, l) => sum + l.montant, 0);
-
-  const beneficiaireNom = beneficiaires.find(b => b.id === beneficiaireId);
 
   const handleSubmit = async () => {
     if (!beneficiaireId || !dateValidite) {
@@ -127,7 +153,6 @@ const DevisFormDialog = ({ open, onOpenChange, editItem, beneficiaires }: DevisF
     if (editItem) {
       const { error } = await supabase.from("devis").update(payload as any).eq("id", editItem.id);
       if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); setLoading(false); return; }
-      // Delete old lignes
       await supabase.from("devis_lignes").delete().eq("devis_id", editItem.id);
     } else {
       const { data, error } = await supabase.from("devis").insert(payload as any).select().single();
@@ -135,7 +160,6 @@ const DevisFormDialog = ({ open, onOpenChange, editItem, beneficiaires }: DevisF
       devisId = data.id;
     }
 
-    // Insert lignes
     if (lignes.length > 0 && lignes.some(l => l.service)) {
       const lignesPayload = lignes.filter(l => l.service).map(l => ({
         devis_id: devisId,
@@ -155,6 +179,19 @@ const DevisFormDialog = ({ open, onOpenChange, editItem, beneficiaires }: DevisF
     onOpenChange(false);
   };
 
+  // Group actes/soins by categorie
+  const groupedActes = useMemo(() => {
+    if (!actesSoins) return {};
+    return actesSoins.reduce((acc: Record<string, typeof actesSoins>, item) => {
+      const cat = item.categorie || "Autre";
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(item);
+      return acc;
+    }, {});
+  }, [actesSoins]);
+
+  const serviceTypeLabel = serviceType === "SSIAD" ? "Soins" : serviceType === "SPASAD" ? "Actes & Soins" : "Actes";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -169,11 +206,14 @@ const DevisFormDialog = ({ open, onOpenChange, editItem, beneficiaires }: DevisF
             </div>
             <div className="space-y-1.5">
               <Label>Bénéficiaire *</Label>
-              <Select value={beneficiaireId} onValueChange={setBeneficiaireId}>
+              <Select value={beneficiaireId} onValueChange={handleBeneficiaireChange}>
                 <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
                 <SelectContent>
                   {beneficiaires.map(b => (
-                    <SelectItem key={b.id} value={b.id}>{b.nom} {b.prenom}</SelectItem>
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.nom} {b.prenom}
+                      {b.service && <span className="text-muted-foreground ml-1">({b.service})</span>}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -200,23 +240,47 @@ const DevisFormDialog = ({ open, onOpenChange, editItem, beneficiaires }: DevisF
             </div>
           </div>
 
+          {/* Service type indicator */}
+          {serviceType && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Type de service :</span>
+              <Badge variant="outline">{serviceType}</Badge>
+              <span className="text-sm text-muted-foreground">— {serviceTypeLabel} disponibles</span>
+            </div>
+          )}
+
           {/* Lignes de devis */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-base font-semibold">Services proposés</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addLigne}><Plus className="w-4 h-4 mr-1" />Ajouter</Button>
+              <Label className="text-base font-semibold">{serviceTypeLabel} proposé(e)s</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addLigne} disabled={!beneficiaireId}>
+                <Plus className="w-4 h-4 mr-1" />Ajouter
+              </Button>
             </div>
-            {lignes.map((ligne, i) => (
+
+            {!beneficiaireId && (
+              <p className="text-sm text-muted-foreground italic">Sélectionnez un bénéficiaire pour voir les {serviceTypeLabel.toLowerCase()} disponibles.</p>
+            )}
+
+            {beneficiaireId && lignes.map((ligne, i) => (
               <div key={i} className="border rounded-lg p-3 space-y-3 bg-muted/30">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs">Service</Label>
+                    <Label className="text-xs">{serviceType === "SSIAD" ? "Soin" : "Acte / Soin"}</Label>
                     <Select value={ligne.service} onValueChange={v => updateLigne(i, "service", v)}>
                       <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
                       <SelectContent>
-                        {(services ?? []).map(s => (
-                          <SelectItem key={s.id} value={s.nom}>{s.nom}</SelectItem>
+                        {Object.entries(groupedActes).map(([cat, items]) => (
+                          <div key={cat}>
+                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{cat}s</div>
+                            {items.map(a => (
+                              <SelectItem key={a.id} value={a.nom}>{a.nom}</SelectItem>
+                            ))}
+                          </div>
                         ))}
+                        {(!actesSoins || actesSoins.length === 0) && (
+                          <div className="px-2 py-2 text-sm text-muted-foreground">Aucun acte/soin configuré pour ce type de service</div>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -250,9 +314,11 @@ const DevisFormDialog = ({ open, onOpenChange, editItem, beneficiaires }: DevisF
                 )}
               </div>
             ))}
-            <div className="text-right text-lg font-semibold">
-              Total : {montantTotal.toFixed(2)} €
-            </div>
+            {beneficiaireId && (
+              <div className="text-right text-lg font-semibold">
+                Total : {montantTotal.toFixed(2)} €
+              </div>
+            )}
           </div>
 
           <div className="space-y-1.5">

@@ -94,6 +94,20 @@ export const useDevis = () =>
     },
   });
 
+export const useActesSoins = (typeService?: string) =>
+  useQuery({
+    queryKey: ["actes_soins", typeService],
+    queryFn: async () => {
+      let query = supabase.from("actes_soins").select("*").order("categorie").order("nom");
+      if (typeService) {
+        query = query.eq("type_service", typeService as any);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+  });
+
 export const useDevisLignes = (devisId?: string) =>
   useQuery({
     queryKey: ["devis_lignes", devisId],
@@ -107,7 +121,7 @@ export const useDevisLignes = (devisId?: string) =>
 
 // ── Generic mutation factory ──
 
-type TableName = "clients" | "services" | "secteurs" | "beneficiaires" | "employes" | "planning_events" | "factures" | "devis" | "devis_lignes";
+type TableName = "clients" | "services" | "secteurs" | "beneficiaires" | "employes" | "planning_events" | "factures" | "devis" | "devis_lignes" | "actes_soins";
 
 function useInsertMutation(table: TableName) {
   const qc = useQueryClient();
