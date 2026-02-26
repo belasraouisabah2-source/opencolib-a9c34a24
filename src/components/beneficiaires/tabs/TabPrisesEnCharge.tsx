@@ -5,6 +5,7 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +34,25 @@ const TabPrisesEnCharge = ({ beneficiaireId }: Props) => {
       const { data, error } = await supabase.from("beneficiaire_prises_en_charge" as any).select("*").eq("beneficiaire_id", beneficiaireId).order("date_debut", { ascending: false });
       if (error) throw error;
       return data as any[];
+    },
+  });
+
+  // Fetch référentiels
+  const { data: refOrganismes = [] } = useQuery({
+    queryKey: ["ref_organismes"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("ref_organismes").select("*").order("nom");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: refServices = [] } = useQuery({
+    queryKey: ["ref_services_pec"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("ref_services_pec").select("*").order("nom");
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -92,6 +112,18 @@ const TabPrisesEnCharge = ({ beneficiaireId }: Props) => {
 
   const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString("fr-FR") : "-";
 
+  // Calcul pourcentage restant pour indicateur visuel
+  const getHeuresPercent = (restant: number, total: number) => {
+    if (total <= 0) return 100;
+    return Math.round((restant / total) * 100);
+  };
+
+  const getHeuresBadgeClass = (percent: number) => {
+    if (percent <= 10) return "text-destructive font-bold";
+    if (percent <= 25) return "text-yellow-600 dark:text-yellow-400 font-semibold";
+    return "font-medium";
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -117,22 +149,28 @@ const TabPrisesEnCharge = ({ beneficiaireId }: Props) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {prises.map((p: any) => (
-              <TableRow key={p.id}>
-                <TableCell>{fmtDate(p.date_debut)}</TableCell>
-                <TableCell>{fmtDate(p.date_fin)}</TableCell>
-                <TableCell>{p.service || "-"}</TableCell>
-                <TableCell className="text-muted-foreground">{p.organisme || "-"}</TableCell>
-                <TableCell className="text-right font-medium">{p.nb_heures}h</TableCell>
-                <TableCell className="text-right font-medium">{p.nb_heures_restant}h</TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}><Pencil className="w-3.5 h-3.5" /></Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {prises.map((p: any) => {
+              const percent = getHeuresPercent(p.nb_heures_restant, p.nb_heures);
+              return (
+                <TableRow key={p.id}>
+                  <TableCell>{fmtDate(p.date_debut)}</TableCell>
+                  <TableCell>{fmtDate(p.date_fin)}</TableCell>
+                  <TableCell>{p.service || "-"}</TableCell>
+                  <TableCell className="text-muted-foreground">{p.organisme || "-"}</TableCell>
+                  <TableCell className="text-right font-medium">{p.nb_heures}h</TableCell>
+                  <TableCell className={`text-right ${getHeuresBadgeClass(percent)}`}>
+                    {p.nb_heures_restant}h
+                    {percent <= 25 && <span className="text-xs ml-1">({percent}%)</span>}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       )}
@@ -150,12 +188,26 @@ const TabPrisesEnCharge = ({ beneficiaireId }: Props) => {
               <Input type="date" value={form.date_fin} onChange={e => setForm(f => ({ ...f, date_fin: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Service</Label>
-              <Input value={form.service} onChange={e => setForm(f => ({ ...f, service: e.target.value }))} placeholder="Aide ménagère, etc." />
+              <Label className="text-xs">Service *</Label>
+              <Select value={form.service} onValueChange={v => setForm(f => ({ ...f, service: v }))}>
+                <SelectTrigger><SelectValue placeholder="Choisir un service" /></SelectTrigger>
+                <SelectContent>
+                  {refServices.map((s: any) => (
+                    <SelectItem key={s.id} value={s.nom}>{s.nom}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Organisme</Label>
-              <Input value={form.organisme} onChange={e => setForm(f => ({ ...f, organisme: e.target.value }))} placeholder="Assurance, CPAM..." />
+              <Label className="text-xs">Organisme *</Label>
+              <Select value={form.organisme} onValueChange={v => setForm(f => ({ ...f, organisme: v }))}>
+                <SelectTrigger><SelectValue placeholder="Choisir un organisme" /></SelectTrigger>
+                <SelectContent>
+                  {refOrganismes.map((o: any) => (
+                    <SelectItem key={o.id} value={o.nom}>{o.nom}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Nb heures total</Label>
