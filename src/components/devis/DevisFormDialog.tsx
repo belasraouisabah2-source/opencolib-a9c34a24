@@ -191,6 +191,7 @@ const DevisFormDialog = ({ open, onOpenChange, editItem, beneficiaires }: DevisF
   }, [actesSoins]);
 
   const serviceTypeLabel = serviceType === "SSIAD" ? "Soins" : serviceType === "SPASAD" ? "Actes & Soins" : "Actes";
+  const serviceTypeLabelSingular = serviceType === "SSIAD" ? "Soin" : serviceType === "SPASAD" ? "Acte / Soin" : "Acte";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -266,7 +267,7 @@ const DevisFormDialog = ({ open, onOpenChange, editItem, beneficiaires }: DevisF
               <div key={i} className="border rounded-lg p-3 space-y-3 bg-muted/30">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs">{serviceType === "SSIAD" ? "Soin" : "Acte / Soin"}</Label>
+                    <Label className="text-xs">{serviceTypeLabelSingular}</Label>
                     <Select value={ligne.service} onValueChange={v => updateLigne(i, "service", v)}>
                       <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
                       <SelectContent>
