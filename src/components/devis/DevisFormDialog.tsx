@@ -272,9 +272,12 @@ const DevisFormDialog = ({ open, onOpenChange, editItem, beneficiaires }: DevisF
                       <SelectContent>
                         {Object.entries(groupedActes).map(([cat, items]) => (
                           <div key={cat}>
-                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{cat}s</div>
+                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b mb-1">{cat}</div>
                             {items.map(a => (
-                              <SelectItem key={a.id} value={a.nom}>{a.nom}</SelectItem>
+                              <SelectItem key={a.id} value={a.nom}>
+                                <span>{a.nom}</span>
+                                {a.tarif_defaut > 0 && <span className="ml-2 text-muted-foreground text-xs">{Number(a.tarif_defaut).toFixed(2)} €/h</span>}
+                              </SelectItem>
                             ))}
                           </div>
                         ))}
