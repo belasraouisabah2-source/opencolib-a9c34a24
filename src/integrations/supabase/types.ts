@@ -242,6 +242,100 @@ export type Database = {
         }
         Relationships: []
       }
+      devis: {
+        Row: {
+          beneficiaire_id: string | null
+          beneficiaire_nom: string
+          code: string
+          created_at: string
+          date_creation: string
+          date_validite: string
+          id: string
+          montant_total: number
+          notes: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          beneficiaire_id?: string | null
+          beneficiaire_nom: string
+          code: string
+          created_at?: string
+          date_creation?: string
+          date_validite: string
+          id?: string
+          montant_total?: number
+          notes?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          beneficiaire_id?: string | null
+          beneficiaire_nom?: string
+          code?: string
+          created_at?: string
+          date_creation?: string
+          date_validite?: string
+          id?: string
+          montant_total?: number
+          notes?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devis_beneficiaire_id_fkey"
+            columns: ["beneficiaire_id"]
+            isOneToOne: false
+            referencedRelation: "beneficiaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devis_lignes: {
+        Row: {
+          created_at: string
+          description: string | null
+          devis_id: string
+          duree_heures: number
+          frequence: string | null
+          id: string
+          montant: number
+          service: string
+          tarif_horaire: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          devis_id: string
+          duree_heures?: number
+          frequence?: string | null
+          id?: string
+          montant?: number
+          service: string
+          tarif_horaire?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          devis_id?: string
+          duree_heures?: number
+          frequence?: string | null
+          id?: string
+          montant?: number
+          service?: string
+          tarif_horaire?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devis_lignes_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employes: {
         Row: {
           civilite: string | null
