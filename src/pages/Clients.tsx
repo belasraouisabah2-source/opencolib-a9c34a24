@@ -11,7 +11,6 @@ import DeleteDialog from "@/components/crud/DeleteDialog";
 const fields: FieldConfig[] = [
   { name: "code", label: "Code", required: true, placeholder: "CL006" },
   { name: "nom", label: "Nom du client", required: true, placeholder: "Nom de l'organisme" },
-  { name: "date_creation", label: "Date de création", type: "date", required: true },
   { name: "etat", label: "État", type: "select", required: true, options: [
     { label: "Actif", value: "Actif" },
     { label: "Archivé", value: "Archivé" },
@@ -113,7 +112,7 @@ const Clients = () => {
         onOpenChange={setFormOpen}
         title={editItem ? "Modifier le client" : "Nouveau client"}
         fields={fields}
-        defaultValues={editItem ? { code: editItem.code, nom: editItem.nom, date_creation: editItem.date_creation, etat: editItem.etat } : { etat: "Actif" }}
+        defaultValues={editItem ? { code: editItem.code, nom: editItem.nom, etat: editItem.etat } : { etat: "Actif" }}
         onSubmit={handleSubmit}
         loading={insertMutation.isPending || updateMutation.isPending}
       />
