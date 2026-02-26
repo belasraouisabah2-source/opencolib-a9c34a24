@@ -33,7 +33,6 @@ const Services = () => {
       { label: "SSIAD", value: "SSIAD" },
       { label: "SPASAD", value: "SPASAD" },
     ]},
-    { name: "date_creation", label: "Date de création", type: "date", required: true },
     { name: "etat", label: "État", type: "select", required: true, options: [
       { label: "Activé", value: "Activé" },
       { label: "Archivé", value: "Archivé" },
@@ -124,7 +123,7 @@ const Services = () => {
         onOpenChange={setFormOpen}
         title={editItem ? "Modifier le service" : "Nouveau service"}
         fields={fields}
-        defaultValues={editItem ? { code: editItem.code, nom: editItem.nom, client_nom: editItem.client_nom, type: editItem.type, date_creation: editItem.date_creation, etat: editItem.etat } : { etat: "Activé" }}
+        defaultValues={editItem ? { code: editItem.code, nom: editItem.nom, client_nom: editItem.client_nom, type: editItem.type, etat: editItem.etat } : { etat: "Activé" }}
         onSubmit={handleSubmit}
         loading={insertMutation.isPending || updateMutation.isPending}
       />
