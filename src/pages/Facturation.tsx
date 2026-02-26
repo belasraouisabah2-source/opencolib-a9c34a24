@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Search, Download, MoreHorizontal, Pencil, Trash2, FileText, Eye } from "lucide-react";
+import { Plus, Search, Download, MoreHorizontal, Pencil, Trash2, FileText, Eye, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,6 +9,7 @@ import { useFactures, useInsertFacture, useUpdateFacture, useDeleteFacture, useB
 import EntityFormDialog, { FieldConfig } from "@/components/crud/EntityFormDialog";
 import DeleteDialog from "@/components/crud/DeleteDialog";
 import FactureDetailDialog from "@/components/factures/FactureDetailDialog";
+import { generateFacturePdf } from "@/utils/generateFacturePdf";
 
 const statusClass = (s: string) => {
   if (s === "Payée") return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
@@ -164,6 +165,7 @@ const Facturation = () => {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDetailItem(f); }}><Eye className="w-4 h-4 mr-2" />Voir</DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); const lc = (contrats ?? []).find(c => c.id === f.contrat_id); generateFacturePdf(f, lc); }}><FileDown className="w-4 h-4 mr-2" />Télécharger PDF</DropdownMenuItem>
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(f); }}><Pencil className="w-4 h-4 mr-2" />Modifier</DropdownMenuItem>
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeleteId(f.id); }} className="text-destructive"><Trash2 className="w-4 h-4 mr-2" />Supprimer</DropdownMenuItem>
                     </DropdownMenuContent>
