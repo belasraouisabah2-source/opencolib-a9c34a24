@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Receipt } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import GenererFactureDialog from "@/components/contrats/GenererFactureDialog";
 
 interface ContratDetailDialogProps {
   open: boolean;
@@ -20,6 +23,7 @@ const statusClass = (s: string) => {
 
 const ContratDetailDialog = ({ open, onOpenChange, contrat }: ContratDetailDialogProps) => {
   const [lignes, setLignes] = useState<any[]>([]);
+  const [factureOpen, setFactureOpen] = useState(false);
 
   useEffect(() => {
     if (open && contrat) {
@@ -32,68 +36,84 @@ const ContratDetailDialog = ({ open, onOpenChange, contrat }: ContratDetailDialo
   if (!contrat) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            Contrat {contrat.code}
-            <Badge className={statusClass(contrat.statut)}>{contrat.statut}</Badge>
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div><span className="text-muted-foreground">Bénéficiaire :</span> <span className="font-medium">{contrat.beneficiaire_nom}</span></div>
-            <div><span className="text-muted-foreground">Date de signature :</span> <span className="font-medium">{contrat.date_signature}</span></div>
-            <div><span className="text-muted-foreground">Début :</span> <span className="font-medium">{contrat.date_debut}</span></div>
-            <div><span className="text-muted-foreground">Fin :</span> <span className="font-medium">{contrat.date_fin || "Indéterminée"}</span></div>
-            <div><span className="text-muted-foreground">Montant :</span> <span className="font-semibold">{Number(contrat.montant_total).toFixed(2)} €</span></div>
-            <div><span className="text-muted-foreground">Paiement :</span> <span className="font-medium">{contrat.modalites_paiement || "—"}</span></div>
-          </div>
-
-          {contrat.clauses && (
-            <div className="text-sm">
-              <span className="text-muted-foreground">Clauses :</span>
-              <p className="mt-1 whitespace-pre-wrap">{contrat.clauses}</p>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              Contrat {contrat.code}
+              <Badge className={statusClass(contrat.statut)}>{contrat.statut}</Badge>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><span className="text-muted-foreground">Bénéficiaire :</span> <span className="font-medium">{contrat.beneficiaire_nom}</span></div>
+              <div><span className="text-muted-foreground">Date de signature :</span> <span className="font-medium">{contrat.date_signature}</span></div>
+              <div><span className="text-muted-foreground">Début :</span> <span className="font-medium">{contrat.date_debut}</span></div>
+              <div><span className="text-muted-foreground">Fin :</span> <span className="font-medium">{contrat.date_fin || "Indéterminée"}</span></div>
+              <div><span className="text-muted-foreground">Montant :</span> <span className="font-semibold">{Number(contrat.montant_total).toFixed(2)} €</span></div>
+              <div><span className="text-muted-foreground">Paiement :</span> <span className="font-medium">{contrat.modalites_paiement || "—"}</span></div>
             </div>
-          )}
 
-          {contrat.notes && (
-            <div className="text-sm">
-              <span className="text-muted-foreground">Notes :</span>
-              <p className="mt-1">{contrat.notes}</p>
-            </div>
-          )}
+            {contrat.clauses && (
+              <div className="text-sm">
+                <span className="text-muted-foreground">Clauses :</span>
+                <p className="mt-1 whitespace-pre-wrap">{contrat.clauses}</p>
+              </div>
+            )}
 
-          <div>
-            <h3 className="font-semibold mb-2">Services contractualisés</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Fréquence</TableHead>
-                  <TableHead className="text-right">Durée (h)</TableHead>
-                  <TableHead className="text-right">Tarif/h</TableHead>
-                  <TableHead className="text-right">Montant</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lignes.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Aucune ligne</TableCell></TableRow>
-                ) : lignes.map(l => (
-                  <TableRow key={l.id}>
-                    <TableCell className="font-medium">{l.service}</TableCell>
-                    <TableCell className="text-muted-foreground">{l.frequence || "—"}</TableCell>
-                    <TableCell className="text-right">{Number(l.duree_heures).toFixed(1)}</TableCell>
-                    <TableCell className="text-right">{Number(l.tarif_horaire).toFixed(2)} €</TableCell>
-                    <TableCell className="text-right font-medium">{Number(l.montant).toFixed(2)} €</TableCell>
+            {contrat.notes && (
+              <div className="text-sm">
+                <span className="text-muted-foreground">Notes :</span>
+                <p className="mt-1">{contrat.notes}</p>
+              </div>
+            )}
+
+            <div>
+              <h3 className="font-semibold mb-2">Services contractualisés</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Fréquence</TableHead>
+                    <TableHead className="text-right">Durée (h)</TableHead>
+                    <TableHead className="text-right">Tarif/h</TableHead>
+                    <TableHead className="text-right">Montant</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {lignes.length === 0 ? (
+                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Aucune ligne</TableCell></TableRow>
+                  ) : lignes.map(l => (
+                    <TableRow key={l.id}>
+                      <TableCell className="font-medium">{l.service}</TableCell>
+                      <TableCell className="text-muted-foreground">{l.frequence || "—"}</TableCell>
+                      <TableCell className="text-right">{Number(l.duree_heures).toFixed(1)}</TableCell>
+                      <TableCell className="text-right">{Number(l.tarif_horaire).toFixed(2)} €</TableCell>
+                      <TableCell className="text-right font-medium">{Number(l.montant).toFixed(2)} €</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {contrat.statut === "Actif" && (
+              <div className="flex justify-end pt-2">
+                <Button size="sm" onClick={() => setFactureOpen(true)}>
+                  <Receipt className="w-4 h-4 mr-2" />Générer une facture
+                </Button>
+              </div>
+            )}
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <GenererFactureDialog
+        open={factureOpen}
+        onOpenChange={setFactureOpen}
+        contrat={contrat}
+      />
+    </>
   );
 };
 
