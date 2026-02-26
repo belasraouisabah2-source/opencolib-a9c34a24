@@ -38,7 +38,12 @@ const TransformerContratDialog = ({ open, onOpenChange, devis, prisesEnCharge }:
     }
   }, [open, devis]);
 
-  const filteredPEC = prisesEnCharge.filter(p => p.beneficiaire_id === devis?.beneficiaire_id);
+  const today = new Date().toISOString().slice(0, 10);
+  const filteredPEC = prisesEnCharge.filter(p =>
+    p.beneficiaire_id === devis?.beneficiaire_id &&
+    p.date_debut <= today &&
+    (!p.date_fin || p.date_fin >= today)
+  );
 
   const handleSubmit = async () => {
     if (!dateDebut) {
