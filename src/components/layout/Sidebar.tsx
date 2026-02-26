@@ -47,6 +47,7 @@ const menuSections = [
     items: [
       { to: "/employes", icon: UserCog, label: "Employés" },
       { to: "/devis", icon: FileText, label: "Devis" },
+      { to: "/contrats", icon: FileText, label: "Contrats" },
       { to: "/facturation", icon: FileText, label: "Facturation" },
     ],
   },

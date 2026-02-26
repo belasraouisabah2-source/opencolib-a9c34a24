@@ -18,6 +18,7 @@ import PlanningMulti from "./pages/PlanningMulti";
 import ControleHeures from "./pages/ControleHeures";
 import Facturation from "./pages/Facturation";
 import Devis from "./pages/Devis";
+import Contrats from "./pages/Contrats";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import AdminUsers from "./pages/AdminUsers";
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/controle-heures" element={<ControleHeures />} />
               <Route path="/facturation" element={<Facturation />} />
               <Route path="/devis" element={<Devis />} />
+              <Route path="/contrats" element={<Contrats />} />
               <Route path="/admin/utilisateurs" element={<AdminUsers />} />
             </Route>
             <Route path="*" element={<NotFound />} />

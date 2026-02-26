@@ -272,6 +272,129 @@ export type Database = {
         }
         Relationships: []
       }
+      contrat_lignes: {
+        Row: {
+          contrat_id: string
+          created_at: string
+          description: string | null
+          duree_heures: number
+          frequence: string | null
+          id: string
+          montant: number
+          service: string
+          tarif_horaire: number
+        }
+        Insert: {
+          contrat_id: string
+          created_at?: string
+          description?: string | null
+          duree_heures?: number
+          frequence?: string | null
+          id?: string
+          montant?: number
+          service: string
+          tarif_horaire?: number
+        }
+        Update: {
+          contrat_id?: string
+          created_at?: string
+          description?: string | null
+          duree_heures?: number
+          frequence?: string | null
+          id?: string
+          montant?: number
+          service?: string
+          tarif_horaire?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contrat_lignes_contrat_id_fkey"
+            columns: ["contrat_id"]
+            isOneToOne: false
+            referencedRelation: "contrats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contrats: {
+        Row: {
+          beneficiaire_id: string | null
+          beneficiaire_nom: string
+          clauses: string | null
+          code: string
+          created_at: string
+          date_debut: string
+          date_fin: string | null
+          date_signature: string
+          devis_id: string | null
+          id: string
+          modalites_paiement: string | null
+          montant_total: number
+          notes: string | null
+          prise_en_charge_id: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          beneficiaire_id?: string | null
+          beneficiaire_nom: string
+          clauses?: string | null
+          code: string
+          created_at?: string
+          date_debut: string
+          date_fin?: string | null
+          date_signature: string
+          devis_id?: string | null
+          id?: string
+          modalites_paiement?: string | null
+          montant_total?: number
+          notes?: string | null
+          prise_en_charge_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          beneficiaire_id?: string | null
+          beneficiaire_nom?: string
+          clauses?: string | null
+          code?: string
+          created_at?: string
+          date_debut?: string
+          date_fin?: string | null
+          date_signature?: string
+          devis_id?: string | null
+          id?: string
+          modalites_paiement?: string | null
+          montant_total?: number
+          notes?: string | null
+          prise_en_charge_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contrats_beneficiaire_id_fkey"
+            columns: ["beneficiaire_id"]
+            isOneToOne: false
+            referencedRelation: "beneficiaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contrats_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contrats_prise_en_charge_id_fkey"
+            columns: ["prise_en_charge_id"]
+            isOneToOne: false
+            referencedRelation: "beneficiaire_prises_en_charge"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devis: {
         Row: {
           beneficiaire_id: string | null
