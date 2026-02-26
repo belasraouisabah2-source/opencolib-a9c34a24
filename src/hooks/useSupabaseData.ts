@@ -84,9 +84,30 @@ export const useBeneficiaireAbsences = () =>
     },
   });
 
+export const useDevis = () =>
+  useQuery({
+    queryKey: ["devis"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("devis").select("*").order("date_creation", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+export const useDevisLignes = (devisId?: string) =>
+  useQuery({
+    queryKey: ["devis_lignes", devisId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("devis_lignes").select("*").eq("devis_id", devisId as any).order("created_at");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!devisId,
+  });
+
 // ── Generic mutation factory ──
 
-type TableName = "clients" | "services" | "secteurs" | "beneficiaires" | "employes" | "planning_events" | "factures";
+type TableName = "clients" | "services" | "secteurs" | "beneficiaires" | "employes" | "planning_events" | "factures" | "devis" | "devis_lignes";
 
 function useInsertMutation(table: TableName) {
   const qc = useQueryClient();
@@ -164,3 +185,10 @@ export const useDeletePlanningEvent = () => useDeleteMutation("planning_events")
 export const useInsertFacture = () => useInsertMutation("factures");
 export const useUpdateFacture = () => useUpdateMutation("factures");
 export const useDeleteFacture = () => useDeleteMutation("factures");
+
+export const useInsertDevis = () => useInsertMutation("devis");
+export const useUpdateDevis = () => useUpdateMutation("devis");
+export const useDeleteDevis = () => useDeleteMutation("devis");
+
+export const useInsertDevisLigne = () => useInsertMutation("devis_lignes");
+export const useDeleteDevisLigne = () => useDeleteMutation("devis_lignes");
