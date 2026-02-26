@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback, DragEvent, FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useCallback, useEffect, DragEvent, FormEvent } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
@@ -62,6 +62,7 @@ const timeDiffHours = (start: string, end: string): number => {
 
 const Planning = ({ defaultViewMode = "employe" }: { defaultViewMode?: "employe" | "beneficiaire" }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [weekOffset, setWeekOffset] = useState(0);
   const [nbWeeks, setNbWeeks] = useState(1);
   const [selectedEmploye, setSelectedEmploye] = useState<string>("");
@@ -71,7 +72,7 @@ const Planning = ({ defaultViewMode = "employe" }: { defaultViewMode?: "employe"
   const [panelOpen, setPanelOpen] = useState(true);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"employe" | "beneficiaire">(defaultViewMode);
-  const [selectedBeneficiaire, setSelectedBeneficiaire] = useState<string>("");
+  const [selectedBeneficiaire, setSelectedBeneficiaire] = useState<string>(searchParams.get("beneficiaire") || "");
   const [createFormOpen, setCreateFormOpen] = useState(false);
   const [createDate, setCreateDate] = useState<string>("");
   const [editFormOpen, setEditFormOpen] = useState(false);
@@ -570,7 +571,7 @@ const Planning = ({ defaultViewMode = "employe" }: { defaultViewMode?: "employe"
                 variant="outline"
                 size="sm"
                 className="w-full"
-                onClick={() => navigate("/planning-beneficiaires")}
+                onClick={() => navigate(`/planning-beneficiaires?beneficiaire=${encodeURIComponent(selectedEvent?.beneficiaire || "")}`)}
               >
                 <User className="w-4 h-4 mr-2" />
                 Planning Bénéficiaire
