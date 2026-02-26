@@ -534,7 +534,12 @@ export type Database = {
       factures: {
         Row: {
           beneficiaire: string
+          beneficiaire_id: string | null
           code: string
+          contrat_id: string | null
+          date_echeance: string | null
+          date_emission: string
+          devis_id: string | null
           id: string
           montant_ht: number
           montant_ttc: number
@@ -544,7 +549,12 @@ export type Database = {
         }
         Insert: {
           beneficiaire: string
+          beneficiaire_id?: string | null
           code: string
+          contrat_id?: string | null
+          date_echeance?: string | null
+          date_emission?: string
+          devis_id?: string | null
           id?: string
           montant_ht?: number
           montant_ttc?: number
@@ -554,7 +564,12 @@ export type Database = {
         }
         Update: {
           beneficiaire?: string
+          beneficiaire_id?: string | null
           code?: string
+          contrat_id?: string | null
+          date_echeance?: string | null
+          date_emission?: string
+          devis_id?: string | null
           id?: string
           montant_ht?: number
           montant_ttc?: number
@@ -562,7 +577,29 @@ export type Database = {
           statut?: string
           tva?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "factures_beneficiaire_id_fkey"
+            columns: ["beneficiaire_id"]
+            isOneToOne: false
+            referencedRelation: "beneficiaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_contrat_id_fkey"
+            columns: ["contrat_id"]
+            isOneToOne: false
+            referencedRelation: "contrats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       planning_events: {
         Row: {
