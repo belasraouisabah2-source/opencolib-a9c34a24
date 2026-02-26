@@ -1,6 +1,8 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Download } from "lucide-react";
+import { generateFacturePdf } from "@/utils/generateFacturePdf";
 
 interface FactureDetailDialogProps {
   open: boolean;
@@ -20,6 +22,10 @@ const FactureDetailDialog = ({ open, onOpenChange, facture, contrats }: FactureD
   if (!facture) return null;
 
   const linkedContrat = contrats.find(c => c.id === facture.contrat_id);
+
+  const handleDownloadPdf = () => {
+    generateFacturePdf(facture, linkedContrat);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -68,6 +74,13 @@ const FactureDetailDialog = ({ open, onOpenChange, facture, contrats }: FactureD
             </div>
           </div>
         </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={handleDownloadPdf}>
+            <Download className="w-4 h-4 mr-2" />
+            Télécharger PDF
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
