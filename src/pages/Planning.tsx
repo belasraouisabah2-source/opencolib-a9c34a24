@@ -163,8 +163,13 @@ const Planning = ({ defaultViewMode = "employe" }: { defaultViewMode?: "employe"
 
   // ── filtered events (depends on view mode) ──
   const uniqueBeneficiaires = useMemo(() => {
-    const names = new Set((planningEvents ?? []).map(e => e.beneficiaire));
-    return Array.from(names).sort();
+    const normalize = (s: string) => s.trim().toLowerCase().split(/\s+/).sort().join(" ");
+    const seen = new Map<string, string>(); // normalized -> first occurrence
+    for (const e of planningEvents ?? []) {
+      const key = normalize(e.beneficiaire);
+      if (!seen.has(key)) seen.set(key, e.beneficiaire);
+    }
+    return Array.from(seen.values()).sort();
   }, [planningEvents]);
 
   const activeBeneficiaire = useMemo(() => {
@@ -173,8 +178,10 @@ const Planning = ({ defaultViewMode = "employe" }: { defaultViewMode?: "employe"
   }, [selectedBeneficiaire, uniqueBeneficiaires]);
 
   const filteredEvents = useMemo(() => {
+    const normalize = (s: string) => s.trim().toLowerCase().split(/\s+/).sort().join(" ");
     if (viewMode === "beneficiaire") {
-      return (planningEvents ?? []).filter(e => e.beneficiaire === activeBeneficiaire);
+      const key = normalize(activeBeneficiaire);
+      return (planningEvents ?? []).filter(e => normalize(e.beneficiaire) === key);
     }
     return (planningEvents ?? []).filter(e => e.employe === activeEmploye);
   }, [planningEvents, activeEmploye, activeBeneficiaire, viewMode]);
