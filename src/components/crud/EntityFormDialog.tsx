@@ -12,6 +12,8 @@ export interface FieldConfig {
   type?: "text" | "date" | "select" | "tel";
   required?: boolean;
   options?: { label: string; value: string }[];
+  /** Dynamic options based on current form values (takes priority over options) */
+  getOptions?: (values: Record<string, string>) => { label: string; value: string }[];
   placeholder?: string;
 }
 
@@ -55,36 +57,40 @@ const EntityFormDialog = ({
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-          {fields.map((field) => (
-            <div key={field.name} className="space-y-1.5">
-              <Label htmlFor={field.name}>{field.label}{field.required && " *"}</Label>
-              {field.type === "select" ? (
-                <Select
-                  value={watch(field.name) || ""}
-                  onValueChange={(v) => setValue(field.name, v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={field.placeholder || `Sélectionner...`} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {field.options?.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  id={field.name}
-                  type={field.type === "tel" ? "tel" : field.type === "date" ? "date" : "text"}
-                  placeholder={field.placeholder}
-                  {...register(field.name, { required: field.required ? "Champ requis" : false })}
-                />
-              )}
-              {errors[field.name] && (
-                <p className="text-xs text-destructive">{errors[field.name]?.message as string}</p>
-              )}
-            </div>
-          ))}
+          {fields.map((field) => {
+            const currentValues = watch();
+            const fieldOptions = field.getOptions ? field.getOptions(currentValues) : field.options;
+            return (
+              <div key={field.name} className="space-y-1.5">
+                <Label htmlFor={field.name}>{field.label}{field.required && " *"}</Label>
+                {field.type === "select" ? (
+                  <Select
+                    value={watch(field.name) || ""}
+                    onValueChange={(v) => setValue(field.name, v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={field.placeholder || `Sélectionner...`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fieldOptions?.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id={field.name}
+                    type={field.type === "tel" ? "tel" : field.type === "date" ? "date" : "text"}
+                    placeholder={field.placeholder}
+                    {...register(field.name, { required: field.required ? "Champ requis" : false })}
+                  />
+                )}
+                {errors[field.name] && (
+                  <p className="text-xs text-destructive">{errors[field.name]?.message as string}</p>
+                )}
+              </div>
+            );
+          })}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
             <Button type="submit" disabled={loading}>

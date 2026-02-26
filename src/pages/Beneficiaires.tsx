@@ -37,8 +37,22 @@ const Beneficiaires = () => {
     { name: "nom", label: "Nom", required: true, placeholder: "NOM" },
     { name: "prenom", label: "Prénom", required: true, placeholder: "Prénom" },
     { name: "client", label: "Client", type: "select", options: (clients ?? []).map(c => ({ label: c.nom, value: c.nom })), placeholder: "Sélectionner un client" },
-    { name: "service", label: "Service", type: "select", options: (services ?? []).map(s => ({ label: s.nom, value: s.nom })), placeholder: "Sélectionner un service" },
-    { name: "secteur", label: "Secteur", type: "select", options: (secteurs ?? []).map(s => ({ label: s.nom, value: s.nom })), placeholder: "Sélectionner un secteur (optionnel)" },
+    { name: "service", label: "Service", type: "select", placeholder: "Sélectionner un service",
+      getOptions: (values) => {
+        const filtered = values.client
+          ? (services ?? []).filter(s => s.client_nom === values.client)
+          : (services ?? []);
+        return filtered.map(s => ({ label: s.nom, value: s.nom }));
+      },
+    },
+    { name: "secteur", label: "Secteur", type: "select", placeholder: "Sélectionner un secteur",
+      getOptions: (values) => {
+        const filtered = values.service
+          ? (secteurs ?? []).filter(s => s.service === values.service)
+          : (secteurs ?? []);
+        return filtered.map(s => ({ label: s.nom, value: s.nom }));
+      },
+    },
     { name: "date_naissance", label: "Date de naissance", type: "date" },
     { name: "adresse", label: "Adresse", placeholder: "Adresse complète" },
     { name: "telephone", label: "Téléphone", type: "tel", placeholder: "01 23 45 67 89" },
