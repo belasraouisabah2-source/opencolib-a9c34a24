@@ -89,13 +89,17 @@ const GenererFactureDialog = ({ open, onOpenChange, contrat }: GenererFactureDia
     const dateFin = `${anneeNum}-${String(moisNum + 1).padStart(2, "0")}-${lastDay}`;
 
     // Fetch completed planning events for this beneficiary in the period
-    const { data: events, error: evtError } = await supabase
+    // Use broader filter then normalize names client-side to handle "DUPONT Marie" vs "Marie DUPONT"
+    const { data: allEvents, error: evtError } = await supabase
       .from("planning_events")
       .select("*")
-      .eq("beneficiaire", contrat.beneficiaire_nom)
       .eq("statut", "Terminée")
       .gte("date", dateDebut)
       .lte("date", dateFin);
+
+    const normalizeName = (s: string) => s.trim().toLowerCase().split(/\s+/).sort().join(" ");
+    const benefKey = normalizeName(contrat.beneficiaire_nom);
+    const events = (allEvents ?? []).filter(e => normalizeName(e.beneficiaire) === benefKey);
 
     if (evtError) {
       toast({ title: "Erreur", description: evtError.message, variant: "destructive" });
