@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Plus, Search, Download, MoreHorizontal, Pencil, Trash2, Eye, FileText } from "lucide-react";
+import { useState } from "react";
+import { Plus, Search, Download, MoreHorizontal, Pencil, Trash2, Eye, FileCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,6 +12,8 @@ import { toast } from "@/hooks/use-toast";
 import DeleteDialog from "@/components/crud/DeleteDialog";
 import DevisFormDialog from "@/components/devis/DevisFormDialog";
 import DevisDetailDialog from "@/components/devis/DevisDetailDialog";
+import TransformerContratDialog from "@/components/devis/TransformerContratDialog";
+import { useQuery } from "@tanstack/react-query";
 
 const statusVariant = (s: string) => {
   switch (s) {
@@ -35,12 +37,23 @@ const Devis = () => {
   const { data: beneficiaires } = useBeneficiaires();
   const queryClient = useQueryClient();
 
+  // Fetch prises en charge for transformer dialog
+  const { data: prisesEnCharge } = useQuery({
+    queryKey: ["beneficiaire_prises_en_charge"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("beneficiaire_prises_en_charge").select("*");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<any | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [detailItem, setDetailItem] = useState<any | null>(null);
+  const [contratDevis, setContratDevis] = useState<any | null>(null);
 
   const filtered = (devis ?? []).filter(d =>
     [d.code, d.beneficiaire_nom, d.statut].some(v => v?.toLowerCase().includes(search.toLowerCase()))
@@ -118,6 +131,11 @@ const Devis = () => {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDetailItem(d); }}><Eye className="w-4 h-4 mr-2" />Voir</DropdownMenuItem>
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(d); }}><Pencil className="w-4 h-4 mr-2" />Modifier</DropdownMenuItem>
+                      {(d.statut === "Accepté" || d.statut === "Envoyé") && (
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setContratDevis(d); }}>
+                          <FileCheck className="w-4 h-4 mr-2" />Transformer en contrat
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeleteId(d.id); }} className="text-destructive"><Trash2 className="w-4 h-4 mr-2" />Supprimer</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -139,6 +157,13 @@ const Devis = () => {
         open={!!detailItem}
         onOpenChange={(o) => !o && setDetailItem(null)}
         devis={detailItem}
+      />
+
+      <TransformerContratDialog
+        open={!!contratDevis}
+        onOpenChange={(o) => !o && setContratDevis(null)}
+        devis={contratDevis}
+        prisesEnCharge={prisesEnCharge ?? []}
       />
 
       <DeleteDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)} onConfirm={handleDelete} loading={deleteLoading} />
