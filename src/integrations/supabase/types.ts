@@ -630,6 +630,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ref_organismes: {
+        Row: {
+          created_at: string
+          id: string
+          nom: string
+          type: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nom: string
+          type?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nom?: string
+          type?: string | null
+        }
+        Relationships: []
+      }
+      ref_services_pec: {
+        Row: {
+          created_at: string
+          id: string
+          nom: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nom: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nom?: string
+        }
+        Relationships: []
+      }
       secteurs: {
         Row: {
           code: string
