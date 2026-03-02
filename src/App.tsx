@@ -1,3 +1,40 @@
+/**
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │                 OPENCOLIB — ARCHITECTURE MODULAIRE                   │
+ * ├──────────────────────────────────────────────────────────────────────┤
+ * │                                                                      │
+ * │  src/                                                                │
+ * │  ├── modules/                    ← Modules métier indépendants       │
+ * │  │   ├── auth/          services/ hooks/ types/ components/          │
+ * │  │   ├── clients/       hooks/                                       │
+ * │  │   ├── services-metier/ hooks/ (services + secteurs)              │
+ * │  │   ├── employees/     hooks/                                       │
+ * │  │   ├── beneficiaries/ hooks/                                       │
+ * │  │   ├── planning/      services/ hooks/                             │
+ * │  │   ├── billing/       hooks/ (factures, devis, contrats)          │
+ * │  │   ├── dashboard/     services/                                    │
+ * │  │   └── users/                                                      │
+ * │  ├── shared/                     ← Infrastructure partagée           │
+ * │  │   ├── constants/     app.constants.ts                             │
+ * │  │   ├── errors/        errorHandler.ts                              │
+ * │  │   ├── permissions/   permissions.ts                               │
+ * │  │   ├── repositories/  baseRepository.ts                            │
+ * │  │   ├── hooks/         useCrudHooks.ts                              │
+ * │  │   └── types/         common.types.ts                              │
+ * │  ├── components/                 ← Composants UI partagés            │
+ * │  │   ├── ui/            (shadcn/ui)                                  │
+ * │  │   ├── crud/          EntityFormDialog, DeleteDialog                │
+ * │  │   └── layout/        AppLayout, Sidebar, Topbar                   │
+ * │  ├── integrations/supabase/      ← Client & types auto-générés       │
+ * │  └── hooks/useSupabaseData.ts    ← Couche compat (ré-exports)        │
+ * │                                                                      │
+ * │  Flux de dépendances :                                               │
+ * │  Pages → Module Hooks → Base Repository → Supabase Client            │
+ * │  Pages → Module Services (logique métier pure)                       │
+ * │  Modules → Shared (constants, errors, permissions)                   │
+ * │                                                                      │
+ * └──────────────────────────────────────────────────────────────────────┘
+ */
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
